@@ -1,0 +1,39 @@
+
+const express = require("express");
+const authRoutes = require("./routes/authRoutes");
+
+const app = express();
+
+app.use(express.json({ limit: "10kb" }));
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "EthioBiz OS API is running",
+  });
+});
+
+app.use("/api/auth", authRoutes);
+
+// Centralized error handler
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  const statusCode = err.statusCode || 500;
+
+  if (statusCode >= 500) {
+    console.error("API error:", err.message);
+  }
+
+  return res.status(statusCode).json({
+    success: false,
+    message:
+      statusCode >= 500
+        ? "An unexpected server error occurred"
+        : err.message,
+  });
+});
+
+module.exports = app;
