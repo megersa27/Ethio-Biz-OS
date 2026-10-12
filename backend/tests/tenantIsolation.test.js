@@ -214,6 +214,98 @@ test("businesses can access only their own products", async (t) => {
   assert.equal(crossAccessA.status, 404);
   assert.equal(crossAccessB.status, 404);
 
+  
+  // Business A can update its own product.
+  const ownUpdate = await request(`/api/products/${productAId}`, {
+    method: "PATCH",
+    token: tokenA,
+    body: {
+      sellingPriceMinor: 12500,
+    },
+  });
+
+  assert.equal(ownUpdate.status, 200);
+  assert.equal(ownUpdate.body.success, true);
+  assert.equal(
+    ownUpdate.body.data.product.sellingPriceMinor,
+    12500
+  );
+
+  // Business A cannot update Business B's product.
+  const crossBusinessUpdate = await request(
+    `/api/products/${productBId}`,
+    {
+      method: "PATCH",
+      token: tokenA,
+      body: {
+        sellingPriceMinor: 99900,
+      },
+    }
+  );
+
+  assert.equal(crossBusinessUpdate.status, 404);
+
+  // Business A cannot transfer its product to Business B.
+  const changeOwnership = await request(
+    `/api/products/${productAId}`,
+    {
+      method: "PATCH",
+      token: tokenA,
+      body: {
+        businessId: businessBId,
+      },
+    }
+  );
+
+  assert.equal(changeOwnership.status, 400);
+
+  // Business A cannot bypass inventory tracking.
+  const changeStock = await request(
+    `/api/products/${productAId}`,
+    {
+      method: "PATCH",
+      token: tokenA,
+      body: {
+        stockQuantity: 999,
+      },
+    }
+  );
+
+  assert.equal(changeStock.status, 400);
+
+  // Verify the protected values were not changed.
+  const verifyProductA = await request(
+    `/api/products/${productAId}`,
+    { token: tokenA }
+  );
+
+  assert.equal(verifyProductA.status, 200);
+  assert.equal(
+    String(verifyProductA.body.data.product.businessId),
+    String(businessAId)
+  );
+  assert.equal(
+    verifyProductA.body.data.product.stockQuantity,
+    20
+  );
+  assert.equal(
+    verifyProductA.body.data.product.sellingPriceMinor,
+    12500
+  );
+
+  // Business B's price remains unchanged.
+  const verifyProductB = await request(
+    `/api/products/${productBId}`,
+    { token: tokenB }
+  );
+
+  assert.equal(verifyProductB.status, 200);
+  assert.equal(
+    verifyProductB.body.data.product.sellingPriceMinor,
+    8000
+  );
+
+
   // Anonymous users cannot list products.
   const anonymous = await request("/api/products");
   assert.equal(anonymous.status, 401);

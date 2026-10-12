@@ -13,5 +13,6 @@ router.use(authenticate, requireTenant);
 router.post("/", productController.create);
 router.get("/", productController.list);
 router.get("/:productId", productController.getById);
+router.patch("/:productId", productController.update);
 
 module.exports = router;

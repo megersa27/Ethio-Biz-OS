@@ -108,8 +108,142 @@ async function getProductById(tenantId, productId) {
   return product;
 }
 
+
+async function updateProduct(tenantId, productId, input = {}) {
+  validateTenantId(tenantId);
+
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createError("Invalid product ID", 400);
+  }
+
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input)
+  ) {
+    throw createError("A valid product update object is required", 400);
+  }
+
+  const allowedFields = [
+    "name",
+    "category",
+    "costPriceMinor",
+    "sellingPriceMinor",
+  ];
+
+  const protectedFields = [
+    "businessId",
+    "stockQuantity",
+    "unit",
+    "isActive",
+    "_id",
+    "createdAt",
+    "updatedAt",
+    "__v",
+  ];
+
+  const suppliedFields = Object.keys(input);
+
+  // Reject attempts to edit tenant ownership or protected fields.
+  const forbiddenField = suppliedFields.find((field) =>
+    protectedFields.includes(field)
+  );
+
+  if (forbiddenField) {
+    throw createError(
+      `${forbiddenField} cannot be changed through product editing`,
+      400
+    );
+  }
+
+  // Reject fields this endpoint does not support.
+  const unsupportedField = suppliedFields.find(
+    (field) => !allowedFields.includes(field)
+  );
+
+  if (unsupportedField) {
+    throw createError(
+      `Unsupported product field: ${unsupportedField}`,
+      400
+    );
+  }
+
+  if (suppliedFields.length === 0) {
+    throw createError("At least one field must be provided", 400);
+  }
+
+  const updates = {};
+
+  if (Object.hasOwn(input, "name")) {
+    if (typeof input.name !== "string" || !input.name.trim()) {
+      throw createError("Product name is required", 400);
+    }
+
+    const name = input.name.trim();
+
+    if (name.length > 150) {
+      throw createError(
+        "Product name cannot exceed 150 characters",
+        400
+      );
+    }
+
+    updates.name = name;
+  }
+
+  if (Object.hasOwn(input, "category")) {
+    if (typeof input.category !== "string") {
+      throw createError("Category must be a string", 400);
+    }
+
+    const category = input.category.trim();
+
+    if (category.length > 80) {
+      throw createError(
+        "Category cannot exceed 80 characters",
+        400
+      );
+    }
+
+    updates.category = category;
+  }
+
+  if (Object.hasOwn(input, "costPriceMinor")) {
+    validatePrice(input.costPriceMinor, "Cost price");
+    updates.costPriceMinor = input.costPriceMinor;
+  }
+
+  if (Object.hasOwn(input, "sellingPriceMinor")) {
+    validatePrice(input.sellingPriceMinor, "Selling price");
+    updates.sellingPriceMinor = input.sellingPriceMinor;
+  }
+
+  // The businessId in this query is essential for tenant isolation.
+  const product = await Product.findOneAndUpdate(
+    {
+      _id: productId,
+      businessId: tenantId,
+    },
+    {
+      $set: updates,
+    },
+    {
+  returnDocument: "after",
+  runValidators: true,
+}
+  );
+
+  if (!product) {
+    throw createError("Product not found", 404);
+  }
+
+  return product;
+}
+
+
 module.exports = {
   createProduct,
   listProducts,
   getProductById,
+  updateProduct,
 };
