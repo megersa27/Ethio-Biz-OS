@@ -214,7 +214,7 @@ test("businesses can access only their own products", async (t) => {
   assert.equal(crossAccessA.status, 404);
   assert.equal(crossAccessB.status, 404);
 
-  
+
   // Business A can update its own product.
   const ownUpdate = await request(`/api/products/${productAId}`, {
     method: "PATCH",
