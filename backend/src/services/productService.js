@@ -1,0 +1,115 @@
+
+const mongoose = require("mongoose");
+const Product = require("../models/Product");
+
+function createError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
+function validateTenantId(tenantId) {
+  if (!tenantId || !mongoose.isValidObjectId(tenantId)) {
+    throw createError("A valid business context is required", 403);
+  }
+}
+
+function validatePrice(value, fieldName) {
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < 0
+  ) {
+    throw createError(
+      `${fieldName} must be a non-negative integer in santim`,
+      400
+    );
+  }
+}
+
+// Create a product for the authenticated business only.
+async function createProduct(tenantId, input = {}) {
+  validateTenantId(tenantId);
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw createError("A valid product object is required", 400);
+  }
+
+  if (typeof input.name !== "string" || !input.name.trim()) {
+    throw createError("Product name is required", 400);
+  }
+
+  const name = input.name.trim();
+
+  if (name.length > 150) {
+    throw createError("Product name cannot exceed 150 characters", 400);
+  }
+
+  validatePrice(input.costPriceMinor, "Cost price");
+  validatePrice(input.sellingPriceMinor, "Selling price");
+
+  const stockQuantity = input.stockQuantity ?? 0;
+
+  if (
+    typeof stockQuantity !== "number" ||
+    !Number.isFinite(stockQuantity) ||
+    stockQuantity < 0
+  ) {
+    throw createError(
+      "Stock quantity must be a non-negative finite number",
+      400
+    );
+  }
+
+  const category = input.category ?? "General";
+  const unit = input.unit ?? "piece";
+
+  // Explicitly select allowed fields.
+  // Never accept businessId from the client.
+  const product = await Product.create({
+    businessId: tenantId,
+    name,
+    category,
+    unit,
+    costPriceMinor: input.costPriceMinor,
+    sellingPriceMinor: input.sellingPriceMinor,
+    stockQuantity,
+  });
+
+  return product;
+}
+
+// Return products belonging to this business only.
+async function listProducts(tenantId) {
+  validateTenantId(tenantId);
+
+  return Product.find({
+    businessId: tenantId,
+  }).sort({ createdAt: -1 });
+}
+
+// Find a particular product inside this business only.
+async function getProductById(tenantId, productId) {
+  validateTenantId(tenantId);
+
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createError("Invalid product ID", 400);
+  }
+
+  const product = await Product.findOne({
+    _id: productId,
+    businessId: tenantId,
+  });
+
+  if (!product) {
+    throw createError("Product not found", 404);
+  }
+
+  return product;
+}
+
+module.exports = {
+  createProduct,
+  listProducts,
+  getProductById,
+};
