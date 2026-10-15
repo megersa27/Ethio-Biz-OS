@@ -309,4 +309,74 @@ test("businesses can access only their own products", async (t) => {
   // Anonymous users cannot list products.
   const anonymous = await request("/api/products");
   assert.equal(anonymous.status, 401);
+
+    // Business A cannot delete Business B's product.
+  const crossBusinessDelete = await request(
+    `/api/products/${productBId}`,
+    {
+      method: "DELETE",
+      token: tokenA,
+    }
+  );
+
+  assert.equal(crossBusinessDelete.status, 404);
+
+  // Rejected deletion must not affect Business B's product.
+  const productBAfterRejectedDelete =
+    await Product.findById(productBId);
+
+  assert.ok(productBAfterRejectedDelete);
+  assert.equal(productBAfterRejectedDelete.isActive, true);
+
+  // Business A can soft-delete its own product.
+  const ownDelete = await request(
+    `/api/products/${productAId}`,
+    {
+      method: "DELETE",
+      token: tokenA,
+    }
+  );
+
+  assert.equal(ownDelete.status, 200);
+  assert.equal(ownDelete.body.success, true);
+  assert.equal(
+    ownDelete.body.data.product.isActive,
+    false
+  );
+
+  // Soft deletion preserves the product in MongoDB.
+  const deletedProductInDatabase =
+    await Product.findById(productAId);
+
+  assert.ok(deletedProductInDatabase);
+  assert.equal(deletedProductInDatabase.isActive, false);
+
+  // Business A's active product list excludes the deleted product.
+  const listAAfterDelete = await request(
+    "/api/products",
+    { token: tokenA }
+  );
+
+  assert.equal(listAAfterDelete.status, 200);
+  assert.deepEqual(
+    listAAfterDelete.body.data.products.map(
+      (product) => product.name
+    ),
+    []
+  );
+
+  // Business B's active product remains unchanged.
+  const listBAfterDelete = await request(
+    "/api/products",
+    { token: tokenB }
+  );
+
+  assert.equal(listBAfterDelete.status, 200);
+  assert.deepEqual(
+    listBAfterDelete.body.data.products.map(
+      (product) => product.name
+    ),
+    ["Isolation Test Paracetamol"]
+  );
+
 });

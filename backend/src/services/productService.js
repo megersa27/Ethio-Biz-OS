@@ -85,6 +85,7 @@ async function listProducts(tenantId) {
 
   return Product.find({
     businessId: tenantId,
+    isActive: true,
   }).sort({ createdAt: -1 });
 }
 
@@ -99,6 +100,7 @@ async function getProductById(tenantId, productId) {
   const product = await Product.findOne({
     _id: productId,
     businessId: tenantId,
+    isActive: true,
   });
 
   if (!product) {
@@ -223,6 +225,7 @@ async function updateProduct(tenantId, productId, input = {}) {
     {
       _id: productId,
       businessId: tenantId,
+      isActive: true,
     },
     {
       $set: updates,
@@ -241,9 +244,39 @@ async function updateProduct(tenantId, productId, input = {}) {
 }
 
 
+async function deleteProduct(tenantId, productId) {
+  validateTenantId(tenantId);
+
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createError("Invalid product ID", 400);
+  }
+
+  const product = await Product.findOneAndUpdate(
+    {
+      _id: productId,
+      businessId: tenantId,
+      isActive: true,
+    },
+    {
+      $set: { isActive: false },
+    },
+    {
+      returnDocument: "after",
+      runValidators: true,
+    }
+  );
+
+  if (!product) {
+    throw createError("Product not found", 404);
+  }
+
+  return product;
+}
+
 module.exports = {
   createProduct,
   listProducts,
   getProductById,
   updateProduct,
+  deleteProduct,
 };

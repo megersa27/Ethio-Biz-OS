@@ -1,9 +1,9 @@
-
 const {
   createProduct,
   listProducts,
   getProductById,
   updateProduct,
+  deleteProduct: deleteProductService,
 } = require("../services/productService");
 
 // POST /api/products
@@ -76,9 +76,28 @@ async function update(req, res, next) {
   }
 }
 
+// DELETE /api/products/:productId
+async function deleteProduct(req, res, next) {
+  try {
+    const product = await deleteProductService(
+      req.tenantId,
+      req.params.productId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Product deactivated successfully",
+      data: { product },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   create,
   list,
   getById,
   update,
+  delete: deleteProduct
 };
