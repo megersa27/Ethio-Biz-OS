@@ -2,6 +2,8 @@
 const express = require("express");
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
+const saleRoutes = require("./routes/saleRoutes");
+const customerRoutes = require("./routes/customerRoutes");
 
 const app = express();
 
@@ -16,6 +18,8 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/sales", saleRoutes);
+app.use("/api/customers", customerRoutes);
 
 // Centralized error handler
 app.use((err, req, res, next) => {

@@ -1,0 +1,525 @@
+const mongoose = require("mongoose");
+
+const Product = require("../models/Product");
+const Customer = require("../models/Customer");
+const Sale = require("../models/Sale");
+
+const PAYMENT_METHODS = [
+  "cash",
+  "mobile_money",
+  "bank_transfer",
+  "other",
+];
+
+const MAX_SALE_ITEMS = 100;
+
+function createError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
+function validateTenantId(tenantId) {
+  if (!tenantId || !mongoose.isValidObjectId(tenantId)) {
+    throw createError("A valid business context is required", 403);
+  }
+}
+
+function isNonNegativeSafeInteger(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function calculateMinorTotal(unitPriceMinor, quantity) {
+  const total = Math.round(unitPriceMinor * quantity);
+
+  if (!Number.isSafeInteger(total)) {
+    throw createError("Sale amount exceeds the supported limit", 400);
+  }
+
+  return total;
+}
+
+function validateQuantityForUnit(quantity, unit) {
+  if (typeof quantity !== "number" ||
+      !Number.isFinite(quantity) ||
+      quantity <= 0) {
+    throw createError("Each item quantity must be a positive number", 400);
+  }
+
+  // Piece, box, pack, gram and millilitre stock must be whole units.
+  if (["piece", "box", "pack", "g", "ml"].includes(unit)) {
+    if (!Number.isSafeInteger(quantity)) {
+      throw createError(
+        `Quantity for unit "${unit}" must be a whole number`,
+        400
+      );
+    }
+    return;
+  }
+
+  // Kilograms and litres can be fractional, to three decimal places.
+  if (["kg", "litre"].includes(unit)) {
+    const scaled = quantity * 1000;
+
+    if (Math.abs(scaled - Math.round(scaled)) > 1e-7) {
+      throw createError(
+        `Quantity for unit "${unit}" can have at most three decimal places`,
+        400
+      );
+    }
+    return;
+  }
+
+  throw createError(`Unsupported product unit: ${unit}`, 400);
+}
+
+function calculatePaymentStatus(totalAmountMinor, paidAmountMinor) {
+  if (paidAmountMinor === totalAmountMinor) {
+    return "PAID";
+  }
+
+  if (paidAmountMinor === 0) {
+    return "UNPAID";
+  }
+
+  return "PARTIAL";
+}
+
+async function createSale(tenantId, userId, input = {}) {
+  validateTenantId(tenantId);
+
+  if (!userId || !mongoose.isValidObjectId(userId)) {
+    throw createError("A valid authenticated user is required", 401);
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw createError("A valid sale object is required", 400);
+  }
+
+  const allowedFields = [
+    "items",
+    "customerId",
+    "paidAmountMinor",
+    "paymentMethod",
+    "paymentReference",
+    "notes",
+  ];
+
+  const unsupportedField = Object.keys(input).find(
+    (field) => !allowedFields.includes(field)
+  );
+
+  if (unsupportedField) {
+    throw createError(`Unsupported sale field: ${unsupportedField}`, 400);
+  }
+
+  if (!Array.isArray(input.items) ||
+      input.items.length === 0 ||
+      input.items.length > MAX_SALE_ITEMS) {
+    throw createError(
+      `A sale must contain between 1 and ${MAX_SALE_ITEMS} items`,
+      400
+    );
+  }
+
+  if (!Object.hasOwn(input, "paidAmountMinor") ||
+      !isNonNegativeSafeInteger(input.paidAmountMinor)) {
+    throw createError(
+      "paidAmountMinor must be a non-negative integer in santim",
+      400
+    );
+  }
+
+  if (input.notes !== undefined &&
+      (typeof input.notes !== "string" || input.notes.length > 500)) {
+    throw createError("Notes must be a string of at most 500 characters", 400);
+  }
+
+  const notes = (input.notes || "").trim();
+
+  if (notes.length > 500) {
+    throw createError("Notes cannot exceed 500 characters", 400);
+  }
+
+  const paymentReference = input.paymentReference ?? "";
+
+  if (typeof paymentReference !== "string" ||
+      paymentReference.length > 120) {
+    throw createError(
+      "Payment reference must be a string of at most 120 characters",
+      400
+    );
+  }
+
+  // Only product IDs and quantities are accepted from the client.
+  // Prices, item totals, costs and business ownership are server-controlled.
+  const requestedItems = [];
+  const seenProductIds = new Set();
+
+  for (const item of input.items) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw createError("Each sale item must be an object", 400);
+    }
+
+    const itemFields = Object.keys(item);
+
+    if (itemFields.some((field) =>
+      !["productId", "quantity"].includes(field)
+    )) {
+      throw createError(
+        "Sale items may contain only productId and quantity",
+        400
+      );
+    }
+
+    if (!mongoose.isValidObjectId(item.productId)) {
+      throw createError("Each item must have a valid product ID", 400);
+    }
+
+    const productId = String(item.productId);
+
+    if (seenProductIds.has(productId)) {
+      throw createError(
+        "A product may appear only once in a sale; combine its quantities",
+        400
+      );
+    }
+
+    seenProductIds.add(productId);
+
+    if (typeof item.quantity !== "number" ||
+        !Number.isFinite(item.quantity) ||
+        item.quantity <= 0) {
+      throw createError("Each item quantity must be a positive number", 400);
+    }
+
+    requestedItems.push({
+      productId,
+      quantity: item.quantity,
+    });
+  }
+
+  const session = await mongoose.startSession();
+  let createdSale;
+
+  try {
+    await session.withTransaction(
+      async () => {
+        // Find active products owned by this business only.
+        const productIds = requestedItems.map((item) => item.productId);
+
+        const products = await Product.find({
+          _id: { $in: productIds },
+          businessId: tenantId,
+          isActive: true,
+        }).session(session);
+
+        if (products.length !== requestedItems.length) {
+          throw createError(
+            "One or more products could not be found in this business",
+            404
+          );
+        }
+
+        const productsById = new Map(
+          products.map((product) => [product._id.toString(), product])
+        );
+
+        const saleItems = requestedItems.map((requestedItem) => {
+          const product = productsById.get(requestedItem.productId);
+          const quantity = requestedItem.quantity;
+
+          validateQuantityForUnit(quantity, product.unit);
+
+          if (!isNonNegativeSafeInteger(product.costPriceMinor) ||
+              !isNonNegativeSafeInteger(product.sellingPriceMinor)) {
+            throw createError(
+              `Product "${product.name}" has an invalid price`,
+              409
+            );
+          }
+
+          return {
+            product,
+            quantity,
+            productId: product._id,
+            productName: product.name,
+            unit: product.unit,
+            costPriceMinor: product.costPriceMinor,
+            sellingPriceMinor: product.sellingPriceMinor,
+            costTotalMinor: calculateMinorTotal(
+              product.costPriceMinor,
+              quantity
+            ),
+            lineTotalMinor: calculateMinorTotal(
+              product.sellingPriceMinor,
+              quantity
+            ),
+          };
+        });
+
+        const totalAmountMinor = saleItems.reduce(
+          (sum, item) => sum + item.lineTotalMinor,
+          0
+        );
+
+        const totalCostMinor = saleItems.reduce(
+          (sum, item) => sum + item.costTotalMinor,
+          0
+        );
+
+        if (!Number.isSafeInteger(totalAmountMinor) ||
+            !Number.isSafeInteger(totalCostMinor)) {
+          throw createError("Sale total exceeds the supported limit", 400);
+        }
+
+        const paidAmountMinor = input.paidAmountMinor;
+
+        if (paidAmountMinor > totalAmountMinor) {
+          throw createError(
+            "Payment cannot exceed the sale total",
+            400
+          );
+        }
+
+        const balanceDueMinor = totalAmountMinor - paidAmountMinor;
+
+        let customerId = null;
+
+        if (input.customerId !== undefined &&
+            input.customerId !== null &&
+            input.customerId !== "") {
+          if (!mongoose.isValidObjectId(input.customerId)) {
+            throw createError("Invalid customer ID", 400);
+          }
+
+          const customer = await Customer.findOne({
+            _id: input.customerId,
+            businessId: tenantId,
+            isActive: true,
+          }).session(session);
+
+          if (!customer) {
+            throw createError("Customer not found", 404);
+          }
+
+          customerId = customer._id;
+        }
+
+        if (balanceDueMinor > 0 && !customerId) {
+          throw createError(
+            "A customer is required for a sale with an outstanding balance",
+            400
+          );
+        }
+
+        let payments = [];
+
+        if (paidAmountMinor > 0) {
+          if (!PAYMENT_METHODS.includes(input.paymentMethod)) {
+            throw createError(
+              `Payment method must be one of: ${PAYMENT_METHODS.join(", ")}`,
+              400
+            );
+          }
+
+          payments = [{
+            amountMinor: paidAmountMinor,
+            method: input.paymentMethod,
+            reference: paymentReference.trim(),
+            receivedBy: userId,
+            paidAt: new Date(),
+          }];
+        } else if (input.paymentMethod !== undefined ||
+                   input.paymentReference !== undefined) {
+          throw createError(
+            "A payment method or reference requires a positive payment amount",
+            400
+          );
+        }
+
+        // Conditional stock updates prevent overselling.
+        // If a stock update or sale insertion fails, the transaction aborts.
+        for (const item of saleItems) {
+          const result = await Product.updateOne(
+            {
+              _id: item.productId,
+              businessId: tenantId,
+              isActive: true,
+              stockQuantity: { $gte: item.quantity },
+            },
+            {
+              $inc: { stockQuantity: -item.quantity },
+            },
+            { session }
+          );
+
+          if (result.modifiedCount !== 1) {
+            throw createError(
+              `Insufficient stock for product "${item.productName}"`,
+              409
+            );
+          }
+        }
+
+        const documents = await Sale.create(
+          [{
+            businessId: tenantId,
+            customerId,
+            soldBy: userId,
+            items: saleItems.map((item) => ({
+              productId: item.productId,
+              productName: item.productName,
+              unit: item.unit,
+              quantity: item.quantity,
+              costPriceMinor: item.costPriceMinor,
+              sellingPriceMinor: item.sellingPriceMinor,
+              costTotalMinor: item.costTotalMinor,
+              lineTotalMinor: item.lineTotalMinor,
+            })),
+            totalAmountMinor,
+            totalCostMinor,
+            paidAmountMinor,
+            balanceDueMinor,
+            paymentStatus: calculatePaymentStatus(
+              totalAmountMinor,
+              paidAmountMinor
+            ),
+            payments,
+            notes,
+          }],
+          { session }
+        );
+
+        createdSale = documents[0];
+      },
+      {
+        readConcern: { level: "snapshot" },
+        writeConcern: { w: "majority" },
+      }
+    );
+
+    return createdSale;
+  } finally {
+    await session.endSession();
+  }
+}
+
+
+async function recordSalePayment(tenantId, userId, saleId, input = {}) {
+  validateTenantId(tenantId);
+
+  if (!userId || !mongoose.isValidObjectId(userId)) {
+    throw createError("A valid authenticated user is required", 401);
+  }
+
+  if (!mongoose.isValidObjectId(saleId)) {
+    throw createError("Invalid sale ID", 400);
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw createError("A valid payment object is required", 400);
+  }
+
+  const allowedFields = ["amountMinor", "paymentMethod", "reference"];
+  const unsupportedField = Object.keys(input).find(
+    (field) => !allowedFields.includes(field)
+  );
+
+  if (unsupportedField) {
+    throw createError(`Unsupported payment field: ${unsupportedField}`, 400);
+  }
+
+  if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0) {
+    throw createError(
+      "amountMinor must be a positive integer in santim",
+      400
+    );
+  }
+
+  if (!PAYMENT_METHODS.includes(input.paymentMethod)) {
+    throw createError(
+      `Payment method must be one of: ${PAYMENT_METHODS.join(", ")}`,
+      400
+    );
+  }
+
+  const reference = input.reference ?? "";
+
+  if (typeof reference !== "string" || reference.length > 120) {
+    throw createError(
+      "Payment reference must be a string of at most 120 characters",
+      400
+    );
+  }
+
+  const session = await mongoose.startSession();
+  let updatedSale;
+
+  try {
+    await session.withTransaction(
+      async () => {
+        // The business filter prevents cross-business payment access.
+        const sale = await Sale.findOne({
+          _id: saleId,
+          businessId: tenantId,
+        }).session(session);
+
+        if (!sale) {
+          throw createError("Sale not found", 404);
+        }
+
+        if (sale.balanceDueMinor <= 0) {
+          throw createError("Sale is already fully paid", 409);
+        }
+
+        if (input.amountMinor > sale.balanceDueMinor) {
+          throw createError(
+            "Payment exceeds the outstanding balance",
+            400
+          );
+        }
+
+        const newPaidAmount =
+          sale.paidAmountMinor + input.amountMinor;
+
+        if (!Number.isSafeInteger(newPaidAmount)) {
+          throw createError("Payment total exceeds the supported limit", 400);
+        }
+
+        sale.payments.push({
+          amountMinor: input.amountMinor,
+          method: input.paymentMethod,
+          reference: reference.trim(),
+          receivedBy: userId,
+          paidAt: new Date(),
+        });
+
+        sale.paidAmountMinor = newPaidAmount;
+        sale.balanceDueMinor = sale.totalAmountMinor - newPaidAmount;
+        sale.paymentStatus = calculatePaymentStatus(
+          sale.totalAmountMinor,
+          newPaidAmount
+        );
+
+        // Save the payment history and updated balance together.
+        await sale.save({ session });
+
+        updatedSale = sale;
+      },
+      {
+        readConcern: { level: "snapshot" },
+        writeConcern: { w: "majority" },
+      }
+    );
+
+    return updatedSale;
+  } finally {
+    await session.endSession();
+  }
+}
+
+module.exports = {
+  createSale,
+  recordSalePayment,
+};
