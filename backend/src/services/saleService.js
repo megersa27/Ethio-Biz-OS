@@ -519,7 +519,141 @@ async function recordSalePayment(tenantId, userId, saleId, input = {}) {
   }
 }
 
+
+function parseDateOnly(value, fieldName) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    throw createError(`${fieldName} must use YYYY-MM-DD format`, 400);
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) {
+    throw createError(`${fieldName} is not a valid calendar date`, 400);
+  }
+
+  return date;
+}
+
+function parsePositiveIntegerQuery(value, fieldName, defaultValue, maximum) {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) {
+    throw createError(`${fieldName} must be a positive integer`, 400);
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isSafeInteger(parsed) || parsed > maximum) {
+    throw createError(`${fieldName} must not exceed ${maximum}`, 400);
+  }
+
+  return parsed;
+}
+
+// List sales for the authenticated business, newest first.
+async function listSales(tenantId, filters = {}) {
+  validateTenantId(tenantId);
+
+  if (!filters || typeof filters !== "object" || Array.isArray(filters)) {
+    throw createError("Invalid sales filters", 400);
+  }
+
+  const allowedFields = ["page", "limit", "startDate", "endDate"];
+  const unsupportedField = Object.keys(filters).find(
+    (field) => !allowedFields.includes(field)
+  );
+
+  if (unsupportedField) {
+    throw createError(`Unsupported sales filter: ${unsupportedField}`, 400);
+  }
+
+  const page = parsePositiveIntegerQuery(filters.page, "page", 1, 1000000);
+  const limit = parsePositiveIntegerQuery(filters.limit, "limit", 20, 100);
+  const skip = (page - 1) * limit;
+
+  if (!Number.isSafeInteger(skip)) {
+    throw createError("Requested page is too large", 400);
+  }
+
+  const match = { businessId: tenantId };
+  const createdAt = {};
+
+  let startDate;
+  let endDate;
+
+  if (filters.startDate !== undefined) {
+    startDate = parseDateOnly(filters.startDate, "startDate");
+    createdAt.$gte = startDate;
+  }
+
+  if (filters.endDate !== undefined) {
+    endDate = parseDateOnly(filters.endDate, "endDate");
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    createdAt.$lt = endDate;
+  }
+
+  if (
+    startDate &&
+    endDate &&
+    endDate.getTime() - 86400000 < startDate.getTime()
+  ) {
+    throw createError("endDate must be on or after startDate", 400);
+  }
+
+  if (Object.keys(createdAt).length > 0) {
+    match.createdAt = createdAt;
+  }
+
+  const [sales, totalItems] = await Promise.all([
+    Sale.find(match)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit),
+    Sale.countDocuments(match),
+  ]);
+
+  return {
+    sales,
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+    },
+  };
+}
+
+// A sale ID alone is not enough: always include the business ID.
+async function getSaleById(tenantId, saleId) {
+  validateTenantId(tenantId);
+
+  if (!mongoose.isValidObjectId(saleId)) {
+    throw createError("Invalid sale ID", 400);
+  }
+
+  const sale = await Sale.findOne({
+    _id: saleId,
+    businessId: tenantId,
+  });
+
+  if (!sale) {
+    throw createError("Sale not found", 404);
+  }
+
+  return sale;
+}
+
 module.exports = {
   createSale,
   recordSalePayment,
+  listSales,
+  getSaleById,
 };
