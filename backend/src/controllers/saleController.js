@@ -3,6 +3,8 @@ const {
   recordSalePayment,
   listSales,
   getSaleById,
+  cancelSale,
+  recordSaleRefund,
 } = require("../services/saleService");
 
 async function create(req, res, next) {
@@ -71,9 +73,51 @@ async function getById(req, res, next) {
   }
 }
 
+
+async function cancel(req, res, next) {
+  try {
+    const sale = await cancelSale(
+      req.tenantId,
+      req.user.id,
+      req.params.saleId,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Sale cancelled and inventory restored successfully",
+      data: { sale },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+async function recordRefund(req, res, next) {
+  try {
+    const sale = await recordSaleRefund(
+      req.tenantId,
+      req.user.id,
+      req.params.saleId,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Refund recorded successfully",
+      data: { sale },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   create,
   recordPayment,
   list,
   getById,
+  cancel,
+  recordRefund,
 };

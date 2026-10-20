@@ -651,9 +651,231 @@ async function getSaleById(tenantId, saleId) {
   return sale;
 }
 
+
+
+// Cancel a sale and restore inventory atomically.
+async function cancelSale(tenantId, userId, saleId, input = {}) {
+  validateTenantId(tenantId);
+
+  if (!userId || !mongoose.isValidObjectId(userId)) {
+    throw createError("A valid authenticated user is required", 401);
+  }
+
+  if (!mongoose.isValidObjectId(saleId)) {
+    throw createError("Invalid sale ID", 400);
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw createError("A valid cancellation object is required", 400);
+  }
+
+  if (Object.keys(input).some((key) => key !== "reason")) {
+    throw createError("Only the cancellation reason is allowed", 400);
+  }
+
+  if (typeof input.reason !== "string" || !input.reason.trim()) {
+    throw createError("A cancellation reason is required", 400);
+  }
+
+  const reason = input.reason.trim();
+
+  if (reason.length > 500) {
+    throw createError("Cancellation reason cannot exceed 500 characters", 400);
+  }
+
+  const session = await mongoose.startSession();
+  let cancelledSale;
+
+  try {
+    await session.withTransaction(
+      async () => {
+        const sale = await Sale.findOne({
+          _id: saleId,
+          businessId: tenantId,
+        }).session(session);
+
+        if (!sale) {
+          throw createError("Sale not found", 404);
+        }
+
+        if (sale.saleStatus !== "COMPLETED") {
+          throw createError("Sale has already been cancelled", 409);
+        }
+
+        // Restore stock only for products belonging to this business.
+        // A deactivated product can still have its stock restored.
+        for (const item of sale.items) {
+          const result = await Product.updateOne(
+            {
+              _id: item.productId,
+              businessId: tenantId,
+            },
+            {
+              $inc: { stockQuantity: item.quantity },
+            },
+            { session }
+          );
+
+          if (result.modifiedCount !== 1) {
+            throw createError(
+              `Cannot restore stock for "${item.productName}". ` +
+              "Cancellation was aborted.",
+              409
+            );
+          }
+        }
+
+        // Preserve original payments and totals for audit history.
+        sale.saleStatus = "CANCELLED";
+        sale.cancelledAt = new Date();
+        sale.cancelledBy = userId;
+        sale.cancellationReason = reason;
+        sale.balanceDueAtCancellationMinor = sale.balanceDueMinor;
+        sale.balanceDueMinor = 0;
+
+        await sale.save({ session });
+        cancelledSale = sale;
+      },
+      {
+        readConcern: { level: "snapshot" },
+        writeConcern: { w: "majority" },
+      }
+    );
+
+    return cancelledSale;
+  } finally {
+    await session.endSession();
+  }
+}
+
+// Export the cancellation function alongside the existing services.
+
+// Record a refund against a cancelled sale without erasing original payments.
+async function recordSaleRefund(tenantId, userId, saleId, input = {}) {
+  validateTenantId(tenantId);
+
+  if (!userId || !mongoose.isValidObjectId(userId)) {
+    throw createError("A valid authenticated user is required", 401);
+  }
+
+  if (!mongoose.isValidObjectId(saleId)) {
+    throw createError("Invalid sale ID", 400);
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw createError("A valid refund object is required", 400);
+  }
+
+  const allowedFields = ["amountMinor", "method", "reference", "reason"];
+  const unsupportedField = Object.keys(input).find(
+    (field) => !allowedFields.includes(field)
+  );
+
+  if (unsupportedField) {
+    throw createError(`Unsupported refund field: ${unsupportedField}`, 400);
+  }
+
+  if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0) {
+    throw createError(
+      "amountMinor must be a positive integer in santim",
+      400
+    );
+  }
+
+  if (!PAYMENT_METHODS.includes(input.method)) {
+    throw createError(
+      `Refund method must be one of: ${PAYMENT_METHODS.join(", ")}`,
+      400
+    );
+  }
+
+  if (typeof input.reason !== "string" || !input.reason.trim()) {
+    throw createError("A refund reason is required", 400);
+  }
+
+  const reason = input.reason.trim();
+
+  if (reason.length > 500) {
+    throw createError("Refund reason cannot exceed 500 characters", 400);
+  }
+
+  const reference = input.reference ?? "";
+
+  if (typeof reference !== "string" || reference.length > 120) {
+    throw createError(
+      "Refund reference must be a string of at most 120 characters",
+      400
+    );
+  }
+
+  const session = await mongoose.startSession();
+  let updatedSale;
+
+  try {
+    await session.withTransaction(
+      async () => {
+        const sale = await Sale.findOne({
+          _id: saleId,
+          businessId: tenantId,
+        }).session(session);
+
+        if (!sale) {
+          throw createError("Sale not found", 404);
+        }
+
+        if (sale.saleStatus !== "CANCELLED") {
+          throw createError(
+            "Only cancelled sales can be refunded through this endpoint",
+            409
+          );
+        }
+
+        const alreadyRefundedMinor = (sale.refunds || []).reduce(
+          (sum, refund) => sum + refund.amountMinor,
+          0
+        );
+
+        const refundableMinor =
+          sale.paidAmountMinor - alreadyRefundedMinor;
+
+        if (input.amountMinor > refundableMinor) {
+          throw createError(
+            "Refund exceeds the amount collected minus previous refunds",
+            400
+          );
+        }
+
+        sale.refunds.push({
+          amountMinor: input.amountMinor,
+          method: input.method,
+          reference: reference.trim(),
+          reason,
+          refundedBy: userId,
+          refundedAt: new Date(),
+        });
+
+        // Keep the original payments and sale totals as historical facts.
+        await sale.save({ session });
+
+        updatedSale = sale;
+      },
+      {
+        readConcern: { level: "snapshot" },
+        writeConcern: { w: "majority" },
+      }
+    );
+
+    return updatedSale;
+  } finally {
+    await session.endSession();
+  }
+}
+
 module.exports = {
   createSale,
   recordSalePayment,
   listSales,
   getSaleById,
+  cancelSale,
+  recordSaleRefund,
 };

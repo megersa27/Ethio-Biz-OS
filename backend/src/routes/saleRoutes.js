@@ -15,5 +15,7 @@ router.get("/:saleId", saleController.getById);
 
 router.post("/", saleController.create);
 router.post("/:saleId/payments", saleController.recordPayment);
+router.post("/:saleId/cancel", saleController.cancel);
+router.post("/:saleId/refunds", saleController.recordRefund);
 
 module.exports = router;

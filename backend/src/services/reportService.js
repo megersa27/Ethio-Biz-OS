@@ -71,12 +71,17 @@ async function getSalesReport(tenantId, filters = {}) {
   }
 
   const businessObjectId = new mongoose.Types.ObjectId(tenantId);
-  const salesMatch = { businessId: businessObjectId };
+  const salesMatch = {
+    businessId: businessObjectId,
+    saleStatus: { $ne: "CANCELLED" },
+  };
   const paymentDateMatch = {};
+  const refundDateMatch = {};
 
   if (startDate) {
     salesMatch.createdAt = { $gte: startDate };
     paymentDateMatch["payments.paidAt"] = { $gte: startDate };
+    refundDateMatch["refunds.refundedAt"] = { $gte: startDate };
   }
 
   if (endDateExclusive) {
@@ -85,11 +90,15 @@ async function getSalesReport(tenantId, filters = {}) {
 
     paymentDateMatch["payments.paidAt"] ??= {};
     paymentDateMatch["payments.paidAt"].$lt = endDateExclusive;
+
+    refundDateMatch["refunds.refundedAt"] ??= {};
+    refundDateMatch["refunds.refundedAt"].$lt = endDateExclusive;
   }
 
   const [
     salesSummaryRows,
     paymentSummaryRows,
+    refundSummaryRows,
     outstandingSummaryRows,
   ] = await Promise.all([
     // Sales, cost and the current balance for sales created in the period.
@@ -122,11 +131,28 @@ async function getSalesReport(tenantId, filters = {}) {
       },
     ]),
 
-    // Current receivables across all sales for this business.
+    // Count refunds by the date money was returned.
+    Sale.aggregate([
+      { $match: { businessId: businessObjectId } },
+      { $unwind: "$refunds" },
+      ...(Object.keys(refundDateMatch).length
+        ? [{ $match: refundDateMatch }]
+        : []),
+      {
+        $group: {
+          _id: null,
+          refundsIssuedMinor: { $sum: "$refunds.amountMinor" },
+          refundCount: { $sum: 1 },
+        },
+      },
+    ]),
+
+    // Current receivables across non-cancelled sales for this business.
     Sale.aggregate([
       {
         $match: {
           businessId: businessObjectId,
+          saleStatus: { $ne: "CANCELLED" },
           balanceDueMinor: { $gt: 0 },
         },
       },
@@ -152,6 +178,11 @@ async function getSalesReport(tenantId, filters = {}) {
     paymentCount: 0,
   };
 
+  const refunds = refundSummaryRows[0] || {
+    refundsIssuedMinor: 0,
+    refundCount: 0,
+  };
+
   const outstanding = outstandingSummaryRows[0] || {
     totalOutstandingCreditMinor: 0,
     outstandingSaleCount: 0,
@@ -170,6 +201,10 @@ async function getSalesReport(tenantId, filters = {}) {
       sales.totalSalesMinor - sales.costOfGoodsSoldMinor,
     paymentsCollectedMinor: payments.paymentsCollectedMinor,
     paymentCount: payments.paymentCount,
+    refundsIssuedMinor: refunds.refundsIssuedMinor,
+    refundCount: refunds.refundCount,
+    netCollectionsMinor:
+      payments.paymentsCollectedMinor - refunds.refundsIssuedMinor,
     outstandingCreditForPeriodMinor:
       sales.outstandingCreditForPeriodMinor,
     totalOutstandingCreditMinor:

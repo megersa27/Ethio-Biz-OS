@@ -115,12 +115,94 @@ const paymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const refundSchema = new mongoose.Schema(
+  {
+    amountMinor: {
+      type: Number,
+      required: true,
+      min: 1,
+      validate: {
+        validator: (value) => Number.isSafeInteger(value) && value > 0,
+        message: "Refund amount must be a positive integer in santim",
+      },
+    },
+
+    method: {
+      type: String,
+      enum: ["cash", "mobile_money", "bank_transfer", "other"],
+      required: true,
+    },
+
+    reference: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 120,
+    },
+
+    reason: {
+      type: String,
+      trim: true,
+      required: true,
+      maxlength: 500,
+    },
+
+    refundedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    refundedAt: {
+      type: Date,
+      default: Date.now,
+      required: true,
+    },
+  },
+  { timestamps: false }
+);
+
 const saleSchema = new mongoose.Schema(
   {
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
       required: true,
+    },
+
+    saleStatus: {
+      type: String,
+      enum: ["COMPLETED", "CANCELLED"],
+      default: "COMPLETED",
+      required: true,
+    },
+
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+
+    cancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    cancellationReason: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 500,
+    },
+
+    balanceDueAtCancellationMinor: {
+      type: Number,
+      default: null,
+      validate: {
+        validator: (value) =>
+          value === null || isNonNegativeSafeInteger(value),
+        message: "Cancellation balance must be a non-negative integer in santim",
+      },
     },
 
     customerId: {
@@ -191,6 +273,11 @@ const saleSchema = new mongoose.Schema(
       default: [],
     },
 
+    refunds: {
+      type: [refundSchema],
+      default: [],
+    },
+
     notes: {
       type: String,
       trim: true,
@@ -251,6 +338,23 @@ saleSchema.pre("validate", function () {
     }
   }
 
+  const refunds = this.refunds || [];
+  const refundTotal = refunds.reduce(
+    (sum, refund) => sum + refund.amountMinor,
+    0
+  );
+
+  if (
+    !Number.isSafeInteger(refundTotal) ||
+    refundTotal < 0 ||
+    refundTotal > this.paidAmountMinor
+  ) {
+    this.invalidate(
+      "refunds",
+      "Total refunds cannot exceed the amount originally collected"
+    );
+  }
+
   const paymentTotal = payments.reduce(
     (sum, payment) => sum + payment.amountMinor,
     0
@@ -272,6 +376,7 @@ saleSchema.pre("validate", function () {
     Number.isSafeInteger(this.balanceDueMinor)
   ) {
     if (
+      this.saleStatus !== "CANCELLED" &&
       this.paidAmountMinor + this.balanceDueMinor !==
       this.totalAmountMinor
     ) {
@@ -294,6 +399,48 @@ saleSchema.pre("validate", function () {
         "Payment status does not match the payment amounts"
       );
     }
+  }
+
+  if (this.saleStatus === "CANCELLED") {
+    if (!this.cancelledAt) {
+      this.invalidate("cancelledAt", "Cancellation time is required");
+    }
+
+    if (!this.cancelledBy) {
+      this.invalidate("cancelledBy", "Cancelling user is required");
+    }
+
+    if (!isNonNegativeSafeInteger(this.balanceDueAtCancellationMinor)) {
+      this.invalidate(
+        "balanceDueAtCancellationMinor",
+        "Original outstanding balance is required"
+      );
+    } else if (
+      this.paidAmountMinor + this.balanceDueAtCancellationMinor !==
+      this.totalAmountMinor
+    ) {
+      this.invalidate(
+        "balanceDueAtCancellationMinor",
+        "Paid amount plus original balance must equal the sale total"
+      );
+    }
+
+    if (this.balanceDueMinor !== 0) {
+      this.invalidate(
+        "balanceDueMinor",
+        "A cancelled sale cannot retain a collectible balance"
+      );
+    }
+  } else if (
+    this.cancelledAt ||
+    this.cancelledBy ||
+    this.cancellationReason ||
+    this.balanceDueAtCancellationMinor !== null
+  ) {
+    this.invalidate(
+      "saleStatus",
+      "Cancellation details require a cancelled sale"
+    );
   }
 
   if (this.balanceDueMinor > 0 && !this.customerId) {
