@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const Customer = require("../models/Customer");
 const Sale = require("../models/Sale");
+const InventoryMovement = require("../models/InventoryMovement");
 
 const PAYMENT_METHODS = [
   "cash",
@@ -339,30 +340,42 @@ async function createSale(tenantId, userId, input = {}) {
         }
 
         // Conditional stock updates prevent overselling.
-        // If a stock update or sale insertion fails, the transaction aborts.
-        for (const item of saleItems) {
-          const result = await Product.updateOne(
-            {
-              _id: item.productId,
-              businessId: tenantId,
-              isActive: true,
-              stockQuantity: { $gte: item.quantity },
-            },
-            {
-              $inc: { stockQuantity: -item.quantity },
-            },
-            { session }
-          );
+// Capture actual quantities so the audit history reflects each stock change.
+const saleMovements = [];
 
-          if (result.modifiedCount !== 1) {
-            throw createError(
-              `Insufficient stock for product "${item.productName}"`,
-              409
-            );
-          }
-        }
+for (const item of saleItems) {
+  const updatedProduct = await Product.findOneAndUpdate(
+    {
+      _id: item.productId,
+      businessId: tenantId,
+      isActive: true,
+      stockQuantity: { $gte: item.quantity },
+    },
+    { $inc: { stockQuantity: -item.quantity } },
+    { session, returnDocument: "after" }
+  );
 
-        const documents = await Sale.create(
+  if (!updatedProduct) {
+    throw createError(
+      `Insufficient stock for product "${item.productName}"`,
+      409
+    );
+  }
+
+  saleMovements.push({
+    businessId: tenantId,
+    productId: item.productId,
+    movementType: "SALE",
+    quantity: item.quantity,
+    stockBefore: updatedProduct.stockQuantity + item.quantity,
+    stockAfter: updatedProduct.stockQuantity,
+    reason: "Stock reduced by completed sale",
+    performedBy: userId,
+    referenceType: "SALE",
+  });
+}
+
+const documents = await Sale.create(
           [{
             businessId: tenantId,
             customerId,
@@ -392,6 +405,16 @@ async function createSale(tenantId, userId, input = {}) {
         );
 
         createdSale = documents[0];
+
+        if (saleMovements.length > 0) {
+          await InventoryMovement.insertMany(
+            saleMovements.map((movement) => ({
+              ...movement,
+              referenceId: createdSale._id,
+            })),
+            { session }
+          );
+        }
       },
       {
         readConcern: { level: "snapshot" },
@@ -702,30 +725,44 @@ async function cancelSale(tenantId, userId, saleId, input = {}) {
           throw createError("Sale has already been cancelled", 409);
         }
 
-        // Restore stock only for products belonging to this business.
-        // A deactivated product can still have its stock restored.
-        for (const item of sale.items) {
-          const result = await Product.updateOne(
-            {
-              _id: item.productId,
-              businessId: tenantId,
-            },
-            {
-              $inc: { stockQuantity: item.quantity },
-            },
-            { session }
-          );
+        // Restore stock and record each restoration in the same transaction.
+// Deactivated products can still have their stock restored.
+for (const item of sale.items) {
+  const updatedProduct = await Product.findOneAndUpdate(
+    {
+      _id: item.productId,
+      businessId: tenantId,
+    },
+    { $inc: { stockQuantity: item.quantity } },
+    { session, returnDocument: "after" }
+  );
 
-          if (result.modifiedCount !== 1) {
-            throw createError(
-              `Cannot restore stock for "${item.productName}". ` +
-              "Cancellation was aborted.",
-              409
-            );
-          }
-        }
+  if (!updatedProduct) {
+    throw createError(
+      `Cannot restore stock for "${item.productName}". ` +
+      "Cancellation was aborted.",
+      409
+    );
+  }
 
-        // Preserve original payments and totals for audit history.
+  await InventoryMovement.create(
+    [{
+      businessId: tenantId,
+      productId: item.productId,
+      movementType: "SALE_CANCELLATION",
+      quantity: item.quantity,
+      stockBefore: updatedProduct.stockQuantity - item.quantity,
+      stockAfter: updatedProduct.stockQuantity,
+      reason,
+      performedBy: userId,
+      referenceType: "SALE_CANCELLATION",
+      referenceId: sale._id,
+    }],
+    { session }
+  );
+}
+
+// Preserve original payments and totals for audit history.
         sale.saleStatus = "CANCELLED";
         sale.cancelledAt = new Date();
         sale.cancelledBy = userId;

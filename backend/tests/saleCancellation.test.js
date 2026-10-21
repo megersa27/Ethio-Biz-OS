@@ -11,6 +11,7 @@ const User = require("../src/models/User");
 const Product = require("../src/models/Product");
 const Customer = require("../src/models/Customer");
 const Sale = require("../src/models/Sale");
+const InventoryMovement = require("../src/models/InventoryMovement");
 
 test("sale cancellation restores stock once and preserves history", async (t) => {
   await connectDB();
@@ -26,6 +27,7 @@ test("sale cancellation restores stock once and preserves history", async (t) =>
   t.after(async () => {
     try {
       if (businessIds.length) {
+        await InventoryMovement.deleteMany({ businessId: { $in: businessIds } });
         await Sale.deleteMany({ businessId: { $in: businessIds } });
         await Customer.deleteMany({ businessId: { $in: businessIds } });
         await Product.deleteMany({ businessId: { $in: businessIds } });
@@ -139,6 +141,21 @@ test("sale cancellation restores stock once and preserves history", async (t) =>
 
   const saleAId = saleAResult.body.data.sale._id;
 
+  // Verify the completed sale recorded its stock movement.
+  const saleMovement = await InventoryMovement.findOne({
+    referenceId: saleAId,
+    productId: productA._id,
+    movementType: "SALE",
+  });
+
+  assert.ok(saleMovement, "Sale inventory movement should exist");
+  assert.equal(saleMovement.quantity, 2);
+  assert.equal(saleMovement.stockBefore, 10);
+  assert.equal(saleMovement.stockAfter, 8);
+  assert.equal(saleMovement.referenceType, "SALE");
+  assert.equal(String(saleMovement.performedBy), registrations[0].user.id);
+
+
   // Stock drops from 10 to 8 when the sale is completed.
   let savedProductA = await Product.findById(productA._id);
   assert.equal(savedProductA.stockQuantity, 8);
@@ -208,6 +225,29 @@ test("sale cancellation restores stock once and preserves history", async (t) =>
   savedProductA = await Product.findById(productA._id);
   assert.equal(savedProductA.stockQuantity, 10);
 
+
+  // Verify cancellation recorded the stock restoration.
+  const cancellationMovement = await InventoryMovement.findOne({
+    referenceId: saleAId,
+    productId: productA._id,
+    movementType: "SALE_CANCELLATION",
+  });
+
+  assert.ok(
+    cancellationMovement,
+    "Cancellation inventory movement should exist"
+  );
+  assert.equal(cancellationMovement.quantity, 2);
+  assert.equal(cancellationMovement.stockBefore, 8);
+  assert.equal(cancellationMovement.stockAfter, 10);
+  assert.equal(cancellationMovement.reason, "Sale entered incorrectly");
+  assert.equal(cancellationMovement.referenceType, "SALE_CANCELLATION");
+  assert.equal(
+    String(cancellationMovement.performedBy),
+    registrations[0].user.id
+  );
+
+
   // The original sale and payment history remain in the database.
   const storedSale = await Sale.findById(saleAId);
   assert.ok(storedSale);
@@ -229,6 +269,15 @@ test("sale cancellation restores stock once and preserves history", async (t) =>
 
   savedProductA = await Product.findById(productA._id);
   assert.equal(savedProductA.stockQuantity, 10);
+
+  assert.equal(
+    await InventoryMovement.countDocuments({
+      referenceId: saleAId,
+      movementType: "SALE_CANCELLATION",
+    }),
+    1,
+    "A duplicate cancellation must not create another movement"
+  );
 
   // The cancelled sale remains visible in its business's history.
   const detail = await request(`/api/sales/${saleAId}`, {

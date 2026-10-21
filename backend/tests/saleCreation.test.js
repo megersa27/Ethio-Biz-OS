@@ -10,6 +10,7 @@ const Business = require("../src/models/Business");
 const User = require("../src/models/User");
 const Product = require("../src/models/Product");
 const Sale = require("../src/models/Sale");
+const InventoryMovement = require("../src/models/InventoryMovement");
 
 test("sales are atomic and isolated between businesses", async (t) => {
   await connectDB();
@@ -29,6 +30,10 @@ test("sales are atomic and isolated between businesses", async (t) => {
         await Sale.deleteMany({
           businessId: { $in: businessIds },
         });
+
+        await InventoryMovement.deleteMany({
+  businessId: { $in: businessIds },
+});
 
         await Product.deleteMany({
           businessId: { $in: businessIds },
@@ -222,6 +227,23 @@ test("sales are atomic and isolated between businesses", async (t) => {
 
   let savedFlour = await Product.findById(flour._id);
   assert.equal(savedFlour.stockQuantity, 3);
+
+  const saleMovement = await InventoryMovement.findOne({
+  businessId: businessAId,
+  productId: flour._id,
+  referenceId: sale._id,
+  movementType: "SALE",
+});
+
+assert.ok(saleMovement, "A completed sale must create a SALE movement");
+assert.equal(saleMovement.quantity, 2);
+assert.equal(saleMovement.stockBefore, 5);
+assert.equal(saleMovement.stockAfter, 3);
+assert.equal(saleMovement.referenceType, "SALE");
+assert.equal(
+  String(saleMovement.performedBy),
+  String(sale.userId || tokenA.userId || saleMovement.performedBy)
+);
 
   // 2. An insufficient-stock failure must roll back earlier stock updates.
   // Flour has sufficient stock, but Salt does not have 99 units available.
