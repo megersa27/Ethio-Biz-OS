@@ -11,5 +11,8 @@ router.use(authenticate, requireTenant);
 
 router.post("/", customerController.create);
 router.get("/", customerController.list);
+router.get("/:customerId", customerController.getById);
+router.put("/:customerId", customerController.update);
+router.delete("/:customerId", customerController.deactivate);
 
 module.exports = router;

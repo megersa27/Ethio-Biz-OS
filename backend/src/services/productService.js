@@ -61,6 +61,19 @@ async function createProduct(tenantId, input = {}) {
     );
   }
 
+  const minimumStockLevel = input.minimumStockLevel ?? 0;
+
+  if (
+    typeof minimumStockLevel !== "number" ||
+    !Number.isFinite(minimumStockLevel) ||
+    minimumStockLevel < 0
+  ) {
+    throw createError(
+      "Minimum stock level must be a non-negative finite number",
+      400
+    );
+  }
+
   const category = input.category ?? "General";
   const unit = input.unit ?? "piece";
 
@@ -74,6 +87,7 @@ async function createProduct(tenantId, input = {}) {
     costPriceMinor: input.costPriceMinor,
     sellingPriceMinor: input.sellingPriceMinor,
     stockQuantity,
+    minimumStockLevel,
   });
 
   return product;
@@ -131,6 +145,7 @@ async function updateProduct(tenantId, productId, input = {}) {
     "category",
     "costPriceMinor",
     "sellingPriceMinor",
+    "minimumStockLevel",
   ];
 
   const protectedFields = [
@@ -218,6 +233,21 @@ async function updateProduct(tenantId, productId, input = {}) {
   if (Object.hasOwn(input, "sellingPriceMinor")) {
     validatePrice(input.sellingPriceMinor, "Selling price");
     updates.sellingPriceMinor = input.sellingPriceMinor;
+  }
+
+  if (Object.hasOwn(input, "minimumStockLevel")) {
+    if (
+      typeof input.minimumStockLevel !== "number" ||
+      !Number.isFinite(input.minimumStockLevel) ||
+      input.minimumStockLevel < 0
+    ) {
+      throw createError(
+        "Minimum stock level must be a non-negative finite number",
+        400
+      );
+    }
+
+    updates.minimumStockLevel = input.minimumStockLevel;
   }
 
   // The businessId in this query is essential for tenant isolation.

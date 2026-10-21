@@ -63,6 +63,17 @@ const productSchema = new mongoose.Schema(
       },
     },
 
+    // Reorder threshold used by low-stock reporting.
+    minimumStockLevel: {
+      type: Number,
+      default: 0,
+      min: [0, "Minimum stock level cannot be negative"],
+      validate: {
+        validator: (value) => Number.isFinite(value),
+        message: "Minimum stock level must be a finite number",
+      },
+    },
+
     isActive: {
       type: Boolean,
       default: true,

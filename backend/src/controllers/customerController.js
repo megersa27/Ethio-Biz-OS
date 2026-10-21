@@ -1,6 +1,9 @@
 const {
   createCustomer,
   listCustomers,
+  getCustomerById,
+  updateCustomer,
+  deactivateCustomer: deactivateCustomerService,
 } = require("../services/customerService");
 
 async function create(req, res, next) {
@@ -30,7 +33,65 @@ async function list(req, res, next) {
   }
 }
 
+// GET /api/customers/:customerId
+async function getById(req, res, next) {
+  try {
+    const customer = await getCustomerById(
+      req.tenantId,
+      req.params.customerId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer retrieved successfully",
+      data: { customer },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// PUT /api/customers/:customerId
+async function update(req, res, next) {
+  try {
+    const customer = await updateCustomer(
+      req.tenantId,
+      req.params.customerId,
+      req.body
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer updated successfully",
+      data: { customer },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// DELETE /api/customers/:customerId
+async function deactivate(req, res, next) {
+  try {
+    const customer = await deactivateCustomerService(
+      req.tenantId,
+      req.params.customerId
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer deactivated successfully",
+      data: { customer },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   create,
   list,
+  getById,
+  update,
+  deactivate,
 };
