@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -10,12 +10,12 @@ import {
   Boxes,
   CalendarDays,
   Check,
-  ChevronDown,
   CircleHelp,
   ClipboardList,
   CreditCard,
   Download,
   LayoutDashboard,
+  LogOut,
   Menu,
   Package,
   Plus,
@@ -37,6 +37,8 @@ import {
   YAxis,
 } from 'recharts';
 import './App.css';
+import AuthPage from './AuthPage.jsx';
+import { getCurrentUser } from './api.js';
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard },
@@ -80,7 +82,7 @@ const formatETB = (amount) =>
     maximumFractionDigits: 0,
   }).format(amount);
 
-function Sidebar({ activePage, setActivePage, isOpen, closeSidebar }) {
+function Sidebar({ activePage, setActivePage, isOpen, closeSidebar, businessName, userName, onLogout }) {
   return (
     <>
       {isOpen && <button className="sidebar-overlay" onClick={closeSidebar} aria-label="Close menu" />}
@@ -135,13 +137,26 @@ function Sidebar({ activePage, setActivePage, isOpen, closeSidebar }) {
             </button>
           </div>
           <div className="profile-mini">
-            <div className="avatar">EB</div>
-            <div className="profile-copy">
-              <p className="profile-name">My Business</p>
-              <p className="profile-role">Business owner</p>
+            <div className="avatar">
+              {(userName || 'Business owner')
+                .trim()
+                .split(/\s+/)
+                .map((part) => part[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase()}
             </div>
-            <button className="profile-more" aria-label="Profile options">
-              <ChevronDown size={16} />
+            <div className="profile-copy">
+              <p className="profile-name">{userName || 'Business owner'}</p>
+              <p className="profile-role">{businessName || 'My Business'}</p>
+            </div>
+            <button
+              className="profile-more"
+              onClick={onLogout}
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut size={16} />
             </button>
           </div>
         </div>
@@ -370,6 +385,75 @@ export default function App() {
   const [period, setPeriod] = useState('This week');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sales, setSales] = useState(initialSales);
+  const [auth, setAuth] = useState(null);
+  const [authChecking, setAuthChecking] = useState(true);
+
+  // Restore an existing session and verify its token with the backend.
+  useEffect(() => {
+    let cancelled = false;
+    const token = sessionStorage.getItem('ethioBizAccessToken');
+
+    if (!token) {
+      setAuthChecking(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    async function restoreSession() {
+      try {
+        const result = await getCurrentUser(token);
+
+        const cachedUser = JSON.parse(
+          sessionStorage.getItem('ethioBizUser') || '{}'
+        );
+        const cachedBusiness = JSON.parse(
+          sessionStorage.getItem('ethioBizBusiness') || 'null'
+        );
+
+        if (!cancelled) {
+          setAuth({
+            accessToken: token,
+            user: { ...cachedUser, ...result.user },
+            business: cachedBusiness,
+          });
+        }
+      } catch {
+        sessionStorage.removeItem('ethioBizAccessToken');
+        sessionStorage.removeItem('ethioBizUser');
+        sessionStorage.removeItem('ethioBizBusiness');
+
+        if (!cancelled) setAuth(null);
+      } finally {
+        if (!cancelled) setAuthChecking(false);
+      }
+    }
+
+    restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function handleLogin(result) {
+    sessionStorage.setItem('ethioBizAccessToken', result.accessToken);
+    sessionStorage.setItem('ethioBizUser', JSON.stringify(result.user));
+    sessionStorage.setItem('ethioBizBusiness', JSON.stringify(result.business));
+
+    setAuth(result);
+    setActivePage('Dashboard');
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem('ethioBizAccessToken');
+    sessionStorage.removeItem('ethioBizUser');
+    sessionStorage.removeItem('ethioBizBusiness');
+
+    setAuth(null);
+    setActivePage('Dashboard');
+    setSearch('');
+  }
 
   const addDemoSale = () => {
     const nextNumber = 2049 + sales.length - initialSales.length;
@@ -383,6 +467,18 @@ export default function App() {
     setSales((current) => [newSale, ...current]);
   };
 
+  if (authChecking) {
+    return (
+      <main className="auth-session-checking">
+        Checking your session...
+      </main>
+    );
+  }
+
+  if (!auth) {
+    return <AuthPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -390,6 +486,9 @@ export default function App() {
         setActivePage={setActivePage}
         isOpen={isSidebarOpen}
         closeSidebar={() => setIsSidebarOpen(false)}
+        businessName={auth.business?.name}
+        userName={auth.user?.name}
+        onLogout={handleLogout}
       />
 
       <main className="main-area">

@@ -880,3 +880,122 @@
     margin-bottom: 12px;
   }
 }
+
+/* Keep the brand and profile fixed; scroll only the main navigation. */
+.sidebar {
+  overflow: hidden;
+}
+
+.sidebar > .nav-label {
+  flex-shrink: 0;
+}
+
+.sidebar > .nav-list[aria-label="Main navigation"] {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+}
+
+.sidebar > .nav-list:not([aria-label="Main navigation"]) {
+  flex-shrink: 0;
+}
+
+.sidebar-bottom {
+  margin-top: 12px;
+  flex-shrink: 0;
+}
+
+/* Save space on short screens so the account controls remain visible. */
+@media (max-height: 680px) {
+  .sidebar {
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+
+  .brand {
+    margin-bottom: 14px;
+  }
+
+  .nav-label {
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .sidebar-bottom {
+    margin-top: 6px;
+  }
+
+  .help-card {
+    display: block;
+    padding: 9px 11px;
+    margin: 0 2px 8px;
+  }
+
+  .help-card-icon {
+    margin-bottom: 5px;
+  }
+
+  .help-card h3 {
+    margin-top: 0;
+    margin-bottom: 4px;
+  }
+
+  .help-card p {
+    margin-top: 0;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .profile-mini {
+    padding-top: 8px;
+  }
+}
+
+.profile-mini {
+  min-width: 0;
+}
+
+.profile-copy {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.profile-name,
+.profile-role {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Make the logout control visible and easy to click. */
+.profile-more {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.profile-more:hover {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.profile-more:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
