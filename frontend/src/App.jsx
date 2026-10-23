@@ -1,44 +1,34 @@
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
-  ArrowDownRight,
-  ArrowRight,
-  ArrowUpRight,
-  Bell,
   Boxes,
-  CalendarDays,
-  Check,
-  CircleHelp,
   ClipboardList,
   CreditCard,
   Download,
   LayoutDashboard,
-  LogOut,
-  Menu,
   Package,
-  Plus,
-  Search,
+  RefreshCw,
   Settings,
   ShoppingCart,
   TrendingUp,
   Users,
   Wallet,
-  X,
 } from 'lucide-react';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import './App.css';
-import AuthPage from './AuthPage.jsx';
-import { getCurrentUser } from './api.js';
+import AuthPage from './pages/AuthPage.jsx';
+import ProductsPage from './pages/ProductsPage.jsx';
+import { StatCard, SalesChart, StockAlerts, RecentSales } from './components/dashboard/DashboardWidgets.jsx';
+import { formatMinor } from './utils/currency.js';
+import Sidebar from './components/layout/Sidebar.jsx';
+import Topbar from './components/layout/Topbar.jsx';
+import {
+  getDashboardSummary,
+  getRecentSales,
+  getCustomers,
+} from './services/api.js';
+import { useAuth } from './context/AuthContext.jsx';
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard },
@@ -49,306 +39,6 @@ const navItems = [
   { label: 'Expenses', icon: CreditCard },
   { label: 'Reports', icon: ClipboardList },
 ];
-
-const salesData = [
-  { day: 'Mon', sales: 3200, expenses: 1800 },
-  { day: 'Tue', sales: 4600, expenses: 2500 },
-  { day: 'Wed', sales: 3800, expenses: 2100 },
-  { day: 'Thu', sales: 5900, expenses: 3200 },
-  { day: 'Fri', sales: 4800, expenses: 2700 },
-  { day: 'Sat', sales: 7200, expenses: 3900 },
-  { day: 'Sun', sales: 6100, expenses: 3400 },
-];
-
-const initialSales = [
-  { id: 'SAL-2048', customer: 'Abebe Kebede', date: 'Today, 10:42 AM', amount: 2450, status: 'Paid' },
-  { id: 'SAL-2047', customer: 'Hana Tesfaye', date: 'Today, 09:18 AM', amount: 1870, status: 'Paid' },
-  { id: 'SAL-2046', customer: 'Mohammed Ali', date: 'Today, 08:56 AM', amount: 3200, status: 'Pending' },
-  { id: 'SAL-2045', customer: 'Sara Bekele', date: 'Yesterday', amount: 950, status: 'Paid' },
-  { id: 'SAL-2044', customer: 'Dawit Alemu', date: 'Yesterday', amount: 1420, status: 'Pending' },
-];
-
-const stockItems = [
-  { name: 'Cooking Oil 5L', category: 'Groceries', quantity: 4, unit: 'units', critical: true },
-  { name: 'Sugar 1kg', category: 'Groceries', quantity: 7, unit: 'packs', critical: false },
-  { name: 'Laundry Soap', category: 'Household', quantity: 3, unit: 'pieces', critical: true },
-  { name: 'Flour 25kg', category: 'Groceries', quantity: 6, unit: 'bags', critical: false },
-];
-
-const formatETB = (amount) =>
-  new Intl.NumberFormat('en-ET', {
-    style: 'currency',
-    currency: 'ETB',
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-function Sidebar({ activePage, setActivePage, isOpen, closeSidebar, businessName, userName, onLogout }) {
-  return (
-    <>
-      {isOpen && <button className="sidebar-overlay" onClick={closeSidebar} aria-label="Close menu" />}
-      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="brand">
-          <div className="brand-mark"><Activity size={23} /></div>
-          <div>
-            <p className="brand-name">EthioBiz<span style={{ color: '#176b4d' }}> OS</span></p>
-            <p className="brand-caption">Business management made simple</p>
-          </div>
-        </div>
-
-        <p className="nav-label">Workspace</p>
-        <nav className="nav-list" aria-label="Main navigation">
-          {navItems.map(({ label, icon: Icon }) => (
-            <button
-              key={label}
-              className={`nav-item ${activePage === label ? 'active' : ''}`}
-              onClick={() => {
-                setActivePage(label);
-                closeSidebar();
-              }}
-            >
-              <Icon size={18} strokeWidth={1.9} />
-              <span>{label}</span>
-              {label === 'Inventory' && <span className="nav-count">4</span>}
-            </button>
-          ))}
-        </nav>
-
-        <p className="nav-label nav-label-lower">Preferences</p>
-        <nav className="nav-list">
-          <button
-            className={`nav-item ${activePage === 'Settings' ? 'active' : ''}`}
-            onClick={() => {
-              setActivePage('Settings');
-              closeSidebar();
-            }}
-          >
-            <Settings size={18} strokeWidth={1.9} />
-            <span>Settings</span>
-          </button>
-        </nav>
-
-        <div className="sidebar-bottom">
-          <div className="help-card">
-            <div className="help-card-icon"><CircleHelp size={18} /></div>
-            <h3>Need a hand?</h3>
-            <p>Find help to get the most out of your business workspace.</p>
-            <button className="help-link" onClick={() => setActivePage('Help')}>
-              Visit help center <ArrowRight size={13} />
-            </button>
-          </div>
-          <div className="profile-mini">
-            <div className="avatar">
-              {(userName || 'Business owner')
-                .trim()
-                .split(/\s+/)
-                .map((part) => part[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
-            <div className="profile-copy">
-              <p className="profile-name">{userName || 'Business owner'}</p>
-              <p className="profile-role">{businessName || 'My Business'}</p>
-            </div>
-            <button
-              className="profile-more"
-              onClick={onLogout}
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        </div>
-      </aside>
-    </>
-  );
-}
-
-function StatCard({ label, value, change, note, icon: Icon, color, direction = 'up' }) {
-  const TrendIcon = direction === 'up' ? ArrowUpRight : ArrowDownRight;
-  return (
-    <article className="stat-card">
-      <div className="stat-top">
-        <span className="stat-label">{label}</span>
-        <span className={`stat-icon ${color || ''}`}><Icon size={19} /></span>
-      </div>
-      <div className="stat-value">{value}</div>
-      <div className="stat-footer">
-        <span className={direction === 'up' ? 'trend-up' : 'trend-down'}>
-          <TrendIcon size={13} /> {change}
-        </span>
-        <span>{note}</span>
-      </div>
-    </article>
-  );
-}
-
-function SalesChart({ period, setPeriod }) {
-  const chartData = period === 'Today'
-    ? salesData.slice(0, 5)
-    : period === 'This year'
-      ? salesData.map((item, index) => ({
-          ...item,
-          day: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Dec'][index],
-          sales: item.sales * 4,
-          expenses: item.expenses * 3,
-        }))
-      : salesData;
-
-  return (
-    <section className="panel chart-panel">
-      <div className="panel-header">
-        <div>
-          <h2 className="panel-title">Sales overview</h2>
-          <p className="panel-subtitle">Track your business performance</p>
-        </div>
-        <select
-          className="select-control"
-          value={period}
-          onChange={(event) => setPeriod(event.target.value)}
-          aria-label="Sales chart period"
-        >
-          <option>This week</option>
-          <option>Today</option>
-          <option>This year</option>
-        </select>
-      </div>
-
-      <div className="chart-summary">
-        <div>
-          <span className="chart-summary-label">Total sales</span>
-          <strong>ETB 35,600</strong>
-        </div>
-        <span className="chart-change"><TrendingUp size={14} /> 12.8%</span>
-      </div>
-
-      <div className="chart-wrap">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 4, left: -18, bottom: 0 }}>
-            <defs>
-              <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#176b4d" stopOpacity={0.18} />
-                <stop offset="100%" stopColor="#176b4d" stopOpacity={0.01} />
-              </linearGradient>
-              <linearGradient id="expensesFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a8d7bc" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#a8d7bc" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid stroke="#edf1ed" strokeDasharray="3 4" vertical={false} />
-            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#89958d', fontSize: 10 }} dy={10} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#89958d', fontSize: 10 }} tickFormatter={(value) => `${value / 1000}k`} />
-            <Tooltip
-              formatter={(value) => [formatETB(value), '']}
-              contentStyle={{ border: '1px solid #e8ede9', borderRadius: 10, fontSize: 11 }}
-            />
-            <Area type="monotone" dataKey="sales" name="Sales" stroke="#176b4d" strokeWidth={2.5} fill="url(#salesFill)" activeDot={{ r: 5 }} />
-            <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#a8d7bc" strokeWidth={2} fill="url(#expensesFill)" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="chart-legend">
-        <span className="legend-item"><span className="legend-dot" /> Sales</span>
-        <span className="legend-item"><span className="legend-dot light" /> Expenses</span>
-      </div>
-    </section>
-  );
-}
-
-function StockAlerts({ setActivePage }) {
-  return (
-    <section className="panel stock-panel">
-      <div className="panel-header">
-        <div>
-          <h2 className="panel-title">Low stock alerts</h2>
-          <p className="panel-subtitle">Products that need attention</p>
-        </div>
-        <span className="alert-count">{stockItems.length}</span>
-      </div>
-
-      <div className="stock-list">
-        {stockItems.map((item) => (
-          <div className="stock-item" key={item.name}>
-            <div className="stock-avatar"><Package size={18} /></div>
-            <div className="stock-info">
-              <p className="stock-name">{item.name}</p>
-              <p className="stock-meta">{item.category}</p>
-            </div>
-            <span className={`stock-count ${item.critical ? 'critical' : ''}`}>
-              {item.quantity} {item.unit}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="panel-footer">
-        <button className="text-link" onClick={() => setActivePage('Inventory')}>
-          View inventory <ArrowRight size={14} />
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function RecentSales({ sales, search, setActivePage }) {
-  const filteredSales = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return sales;
-    return sales.filter((sale) =>
-      `${sale.id} ${sale.customer} ${sale.status}`.toLowerCase().includes(query)
-    );
-  }, [sales, search]);
-
-  return (
-    <section className="panel table-panel">
-      <div className="panel-header">
-        <div>
-          <h2 className="panel-title">Recent sales</h2>
-          <p className="panel-subtitle">A quick look at your latest transactions</p>
-        </div>
-        <button className="secondary-button" onClick={() => setActivePage('Sales')}>
-          View all <ArrowRight size={14} />
-        </button>
-      </div>
-
-      <div className="table-scroll">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Sale ID</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredSales.map((sale) => (
-              <tr key={sale.id}>
-                <td><span className="table-primary">{sale.id}</span></td>
-                <td>{sale.customer}</td>
-                <td><span className="table-secondary">{sale.date}</span></td>
-                <td><strong>{formatETB(sale.amount)}</strong></td>
-                <td><span className={`status ${sale.status.toLowerCase()}`}>{sale.status}</span></td>
-              </tr>
-            ))}
-            {filteredSales.length === 0 && (
-              <tr><td colSpan="5" className="empty-state">No matching sales found.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className="table-bottom">
-        <p>Showing {filteredSales.length} of {sales.length} demo transactions</p>
-        <button className="text-link" onClick={() => setActivePage('Reports')}>
-          Sales report <ArrowRight size={13} />
-        </button>
-      </div>
-    </section>
-  );
-}
 
 function PlaceholderPage({ page, setActivePage }) {
   const descriptions = {
@@ -384,88 +74,106 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('This week');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sales, setSales] = useState(initialSales);
-  const [auth, setAuth] = useState(null);
-  const [authChecking, setAuthChecking] = useState(true);
+  const [sales, setSales] = useState([]);
+  const [dashboardSummary, setDashboardSummary] = useState(null);
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState('');
+  const [dashboardRefresh, setDashboardRefresh] = useState(0);
+  const { auth, authChecking, login, logout } = useAuth();
 
-  // Restore an existing session and verify its token with the backend.
   useEffect(() => {
+    const token = auth?.accessToken;
+
+    if (!token) return undefined;
+
     let cancelled = false;
-    const token = sessionStorage.getItem('ethioBizAccessToken');
 
-    if (!token) {
-      setAuthChecking(false);
-      return () => {
-        cancelled = true;
-      };
-    }
+    async function loadDashboardData() {
+      setDashboardLoading(true);
+      setDashboardError('');
 
-    async function restoreSession() {
       try {
-        const result = await getCurrentUser(token);
+        const [summaryResult, salesResult, customersResult] =
+          await Promise.all([
+            getDashboardSummary(token),
+            getRecentSales(token, 5),
+            getCustomers(token),
+          ]);
 
-        const cachedUser = JSON.parse(
-          sessionStorage.getItem('ethioBizUser') || '{}'
-        );
-        const cachedBusiness = JSON.parse(
-          sessionStorage.getItem('ethioBizBusiness') || 'null'
+        if (cancelled) return;
+
+        const summary = summaryResult.report || summaryResult;
+        const customerRows = customersResult.customers || [];
+
+        const customerNames = new Map(
+          customerRows.map((customer) => [
+            String(customer._id || customer.id),
+            customer.name || 'Customer',
+          ])
         );
 
+        setDashboardSummary(summary);
+
+        setLowStockItems(
+          (summary.lowStockItems || []).map((item) => ({
+            id: String(item._id || item.id || item.name),
+            name: item.name,
+            category: 'Below reorder level',
+            quantity: item.stockQuantity,
+            unit: item.unit || 'units',
+            critical:
+              Number(item.stockQuantity) <=
+              Number(item.minimumStockLevel ?? 0),
+          }))
+        );
+
+        setSales(
+          (salesResult.sales || []).map((sale) => {
+            const paymentStatus = String(sale.paymentStatus || '').toUpperCase();
+
+            let status = 'Pending';
+            if (sale.saleStatus === 'CANCELLED') {
+              status = 'Cancelled';
+            } else if (paymentStatus === 'PAID') {
+              status = 'Paid';
+            } else if (Number(sale.paidAmountMinor || 0) > 0) {
+              status = 'Partial';
+            }
+
+            const rawCustomerId = sale.customerId?._id || sale.customerId;
+
+            return {
+              id: `SAL-${String(sale._id || sale.id).slice(-6).toUpperCase()}`,
+              customer: rawCustomerId
+                ? customerNames.get(String(rawCustomerId)) || 'Customer'
+                : 'Walk-in customer',
+              date: sale.createdAt
+                ? new Date(sale.createdAt).toLocaleString('en-ET', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })
+                : 'Date unavailable',
+              amountMinor: Number(sale.totalAmountMinor) || 0,
+              status,
+            };
+          })
+        );
+      } catch (error) {
         if (!cancelled) {
-          setAuth({
-            accessToken: token,
-            user: { ...cachedUser, ...result.user },
-            business: cachedBusiness,
-          });
+          setDashboardError(error.message || 'Could not load dashboard data.');
         }
-      } catch {
-        sessionStorage.removeItem('ethioBizAccessToken');
-        sessionStorage.removeItem('ethioBizUser');
-        sessionStorage.removeItem('ethioBizBusiness');
-
-        if (!cancelled) setAuth(null);
       } finally {
-        if (!cancelled) setAuthChecking(false);
+        if (!cancelled) setDashboardLoading(false);
       }
     }
 
-    restoreSession();
+    loadDashboardData();
 
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  function handleLogin(result) {
-    sessionStorage.setItem('ethioBizAccessToken', result.accessToken);
-    sessionStorage.setItem('ethioBizUser', JSON.stringify(result.user));
-    sessionStorage.setItem('ethioBizBusiness', JSON.stringify(result.business));
-
-    setAuth(result);
-    setActivePage('Dashboard');
-  }
-
-  function handleLogout() {
-    sessionStorage.removeItem('ethioBizAccessToken');
-    sessionStorage.removeItem('ethioBizUser');
-    sessionStorage.removeItem('ethioBizBusiness');
-
-    setAuth(null);
-    setActivePage('Dashboard');
-    setSearch('');
-  }
-
-  const addDemoSale = () => {
-    const nextNumber = 2049 + sales.length - initialSales.length;
-    const newSale = {
-      id: `SAL-${nextNumber}`,
-      customer: 'New customer',
-      date: 'Just now',
-      amount: 1250,
-      status: 'Paid',
-    };
-    setSales((current) => [newSale, ...current]);
-  };
+  }, [auth?.accessToken, dashboardRefresh]);
 
   if (authChecking) {
     return (
@@ -476,55 +184,29 @@ export default function App() {
   }
 
   if (!auth) {
-    return <AuthPage onLogin={handleLogin} />;
+    return <AuthPage onLogin={login} />;
   }
 
   return (
     <div className="app-shell">
       <Sidebar
+        navItems={navItems}
         activePage={activePage}
         setActivePage={setActivePage}
         isOpen={isSidebarOpen}
         closeSidebar={() => setIsSidebarOpen(false)}
         businessName={auth.business?.name}
         userName={auth.user?.name}
-        onLogout={handleLogout}
+        onLogout={logout}
       />
 
       <main className="main-area">
-        <header className="topbar">
-          <div className="topbar-left">
-            <button
-              className="icon-button mobile-menu"
-              onClick={() => setIsSidebarOpen(true)}
-              aria-label="Open navigation"
-            >
-              <Menu size={19} />
-            </button>
-            <div className="breadcrumb">Workspace <span>/</span> <strong>{activePage}</strong></div>
-          </div>
-          <div className="topbar-actions">
-            <label className="search-box">
-              <Search size={16} />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search sales..."
-                aria-label="Search sales"
-              />
-              {search && (
-                <button className="clear-search" onClick={() => setSearch('')} aria-label="Clear search">
-                  <X size={13} />
-                </button>
-              )}
-            </label>
-            <button className="icon-button notification-button" aria-label="Notifications">
-              <Bell size={17} />
-              <span className="notification-dot" />
-            </button>
-            <div className="avatar top-avatar">EB</div>
-          </div>
-        </header>
+        <Topbar
+          activePage={activePage}
+          search={search}
+          setSearch={setSearch}
+          onOpenMenu={() => setIsSidebarOpen(true)}
+        />
 
         <div className="content">
           {activePage === 'Dashboard' ? (
@@ -539,64 +221,115 @@ export default function App() {
                   <button className="secondary-button" onClick={() => window.print()}>
                     <Download size={15} /> Export
                   </button>
-                  <button className="primary-button" onClick={addDemoSale}>
-                    <Plus size={16} /> Add demo sale
+                  <button
+                    className="primary-button"
+                    onClick={() => setDashboardRefresh((value) => value + 1)}
+                    disabled={dashboardLoading}
+                  >
+                    <RefreshCw size={16} />
+                    {dashboardLoading ? 'Refreshing…' : 'Refresh data'}
                   </button>
                 </div>
               </div>
 
               <div className="demo-notice">
-                <AlertTriangle size={16} />
-                <span><strong>Preview mode:</strong> These are sample figures for demonstrating the dashboard, not your actual business records.</span>
+                {dashboardError
+                  ? <AlertTriangle size={16} />
+                  : <Activity size={16} />}
+                <span>
+                  <strong>
+                    {dashboardError
+                      ? 'Could not load live data:'
+                      : dashboardLoading
+                        ? 'Loading business data:'
+                        : 'Business data:'}
+                  </strong>{' '}
+                  {dashboardError ||
+                    (dashboardLoading
+                      ? 'Fetching sales, expenses, credit and inventory.'
+                      : 'Figures are from your business records. The sales chart below still uses illustrative trends.')}
+                </span>
               </div>
 
               <div className="stats-grid">
                 <StatCard
                   label="Total sales"
-                  value="ETB 35,600"
-                  change="12.8%"
-                  note="vs. previous period"
+                  value={dashboardLoading && !dashboardSummary
+                    ? 'Loading…'
+                    : formatMinor(dashboardSummary?.totalSalesMinor ?? 0)}
+                  change=""
+                  note="from business records"
                   icon={Wallet}
-                  color=""
                 />
                 <StatCard
                   label="Total expenses"
-                  value="ETB 12,450"
-                  change="4.3%"
-                  note="vs. previous period"
+                  value={dashboardLoading && !dashboardSummary
+                    ? 'Loading…'
+                    : formatMinor(dashboardSummary?.totalExpensesMinor ?? 0)}
+                  change=""
+                  note="from business records"
                   icon={CreditCard}
                   color="orange"
-                  direction="down"
                 />
                 <StatCard
                   label="Net profit"
-                  value="ETB 23,150"
-                  change="8.6%"
-                  note="vs. previous period"
+                  value={dashboardLoading && !dashboardSummary
+                    ? 'Loading…'
+                    : formatMinor(dashboardSummary?.netProfitMinor ?? 0)}
+                  change=""
+                  note="sales profit minus expenses"
                   icon={TrendingUp}
                   color="blue"
                 />
                 <StatCard
                   label="Credit outstanding"
-                  value="ETB 8,200"
-                  change="3 customers"
-                  note="need follow-up"
+                  value={dashboardLoading && !dashboardSummary
+                    ? 'Loading…'
+                    : formatMinor(dashboardSummary?.outstandingCreditMinor ?? 0)}
+                  change=""
+                  note={`${dashboardSummary?.outstandingSaleCount ?? 0} outstanding sales`}
                   icon={Users}
                   color="purple"
-                  direction="down"
                 />
               </div>
 
-              <div className="dashboard-grid">
-                <SalesChart period={period} setPeriod={setPeriod} />
-                <StockAlerts setActivePage={setActivePage} />
+                            <div className="dashboard-grid">
+                <SalesChart
+                  period={period}
+                  setPeriod={setPeriod}
+                  totalSalesMinor={dashboardSummary?.totalSalesMinor ?? 0}
+                />
+                <StockAlerts
+                  items={lowStockItems}
+                  loading={dashboardLoading}
+                  setActivePage={setActivePage}
+                />
               </div>
 
-              <RecentSales sales={sales} search={search} setActivePage={setActivePage} />
+              <RecentSales
+                sales={sales}
+                search={search}
+                loading={dashboardLoading}
+                setActivePage={setActivePage}
+              />
 
               <div className="footer-note">
-                EthioBiz OS · Business insights made simple · Demo data
+                EthioBiz OS · Business insights made simple · Live business records
               </div>
+            </>
+          ) : activePage === 'Products' ? (
+            <>
+              <div className="page-heading">
+                <div>
+                  <p className="eyebrow">YOUR BUSINESS WORKSPACE</p>
+                  <h1>Products</h1>
+                  <p>Manage product details, prices and reorder levels.</p>
+                </div>
+                <button className="secondary-button" onClick={() => setActivePage('Dashboard')}>
+                  <LayoutDashboard size={15} /> Dashboard
+                </button>
+              </div>
+              <ProductsPage token={auth.accessToken} />
             </>
           ) : (
             <>

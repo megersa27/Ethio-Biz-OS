@@ -7,7 +7,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
-import { loginUser, registerBusiness } from './api.js';
+import { loginUser, registerBusiness } from '../services/api.js';
 import './AuthPage.css';
 
 const initialForm = {
