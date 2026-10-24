@@ -118,6 +118,20 @@ export function deactivateProduct(token, productId) {
   });
 }
 
+// Retrieve stock movement history for the authenticated business.
+export function getInventoryMovements(token, options = {}) {
+  const query = new URLSearchParams({
+    page: String(options.page ?? 1),
+    limit: String(options.limit ?? 20),
+  });
+
+  if (options.productId) {
+    query.set('productId', options.productId);
+  }
+
+  return apiRequest(`/inventory/movements?${query.toString()}`, { token });
+}
+
 // Record stock received, damaged, expired, or adjusted.
 export function recordInventoryMovement(token, movement) {
   return apiRequest('/inventory/movements', {

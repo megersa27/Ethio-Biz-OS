@@ -19,6 +19,7 @@ import {
 import './App.css';
 import AuthPage from './pages/AuthPage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
+import InventoryPage from './pages/InventoryPage.jsx';
 import { StatCard, SalesChart, StockAlerts, RecentSales } from './components/dashboard/DashboardWidgets.jsx';
 import { formatMinor } from './utils/currency.js';
 import Sidebar from './components/layout/Sidebar.jsx';
@@ -331,6 +332,8 @@ export default function App() {
               </div>
               <ProductsPage token={auth.accessToken} />
             </>
+          ) : activePage === 'Inventory' ? (
+            <InventoryPage token={auth.accessToken} />
           ) : (
             <>
               <div className="page-heading">
