@@ -92,6 +92,27 @@ export function getCustomers(token) {
   return apiRequest('/customers', { token });
 }
 
+// Create a customer for the authenticated business.
+export function createCustomer(token, customer) {
+  return apiRequest('/customers', {
+    method: 'POST', token, body: customer,
+  });
+}
+
+// Update a customer's editable details.
+export function updateCustomer(token, customerId, updates) {
+  return apiRequest(`/customers/${customerId}`, {
+    method: 'PUT', token, body: updates,
+  });
+}
+
+// Deactivate while keeping historical sales references.
+export function deactivateCustomer(token, customerId) {
+  return apiRequest(`/customers/${customerId}`, {
+    method: 'DELETE', token,
+  });
+}
+
 // Create a product for the authenticated business.
 export function createProduct(token, product) {
   return apiRequest('/products', {

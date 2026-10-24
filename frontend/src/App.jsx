@@ -21,6 +21,7 @@ import AuthPage from './pages/AuthPage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
 import InventoryPage from './pages/InventoryPage.jsx';
 import SalesPage from './pages/SalesPage.jsx';
+import CustomersPage from './pages/CustomersPage.jsx';
 import { StatCard, SalesChart, StockAlerts, RecentSales } from './components/dashboard/DashboardWidgets.jsx';
 import { formatMinor } from './utils/currency.js';
 import Sidebar from './components/layout/Sidebar.jsx';
@@ -321,6 +322,8 @@ export default function App() {
             </>
           ) : activePage === 'Sales' ? (
             <SalesPage token={auth.accessToken} />
+          ) : activePage === 'Customers' ? (
+            <CustomersPage token={auth.accessToken} />
           ) : activePage === 'Products' ? (
             <>
               <div className="page-heading">
