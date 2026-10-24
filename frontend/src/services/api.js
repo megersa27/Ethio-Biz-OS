@@ -139,6 +139,45 @@ export function deactivateProduct(token, productId) {
   });
 }
 
+// List business expenses with pagination and optional date filters.
+export function getExpenses(token, options = {}) {
+  const query = new URLSearchParams({
+    page: String(options.page ?? 1),
+    limit: String(options.limit ?? 50),
+  });
+
+  if (options.startDate) query.set('startDate', options.startDate);
+  if (options.endDate) query.set('endDate', options.endDate);
+
+  return apiRequest(`/expenses?${query.toString()}`, { token });
+}
+
+// Create an expense; amountMinor is measured in santim.
+export function createExpense(token, expense) {
+  return apiRequest('/expenses', {
+    method: 'POST',
+    token,
+    body: expense,
+  });
+}
+
+// Update an existing expense.
+export function updateExpense(token, expenseId, updates) {
+  return apiRequest(`/expenses/${expenseId}`, {
+    method: 'PUT',
+    token,
+    body: updates,
+  });
+}
+
+// Deactivate an expense without physically deleting its record.
+export function deactivateExpense(token, expenseId) {
+  return apiRequest(`/expenses/${expenseId}`, {
+    method: 'DELETE',
+    token,
+  });
+}
+
 // Retrieve stock movement history for the authenticated business.
 export function getInventoryMovements(token, options = {}) {
   const query = new URLSearchParams({
