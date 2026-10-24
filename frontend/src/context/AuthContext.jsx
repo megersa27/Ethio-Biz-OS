@@ -80,6 +80,28 @@ export function AuthProvider({ children }) {
     setAuth(result);
   }
 
+  function updateProfile(profile) {
+    if (!profile) return;
+
+    const user = {
+      ...readStoredJson('ethioBizUser', {}),
+      ...(profile.user || {}),
+    };
+    const business = {
+      ...readStoredJson('ethioBizBusiness', {}),
+      ...(profile.business || {}),
+    };
+
+    sessionStorage.setItem('ethioBizUser', JSON.stringify(user));
+    sessionStorage.setItem('ethioBizBusiness', JSON.stringify(business));
+
+    setAuth((current) => current ? {
+      ...current,
+      user: { ...current.user, ...(profile.user || {}) },
+      business: { ...current.business, ...(profile.business || {}) },
+    } : current);
+  }
+
   function logout() {
     clearStoredSession();
     setAuth(null);
@@ -87,7 +109,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ auth, authChecking, login, logout }}
+      value={{ auth, authChecking, login, logout, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

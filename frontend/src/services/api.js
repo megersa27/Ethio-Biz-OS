@@ -261,3 +261,17 @@ export function getBusinessReportSummary(token, options = {}) {
 export function getBusinessStockReport(token) {
   return apiRequest('/reports/stock', { token });
 }
+
+
+// Load and update the authenticated user's profile and business details.
+export function getSettingsProfile(token) {
+  return apiRequest('/settings/profile', { token });
+}
+
+export function updateSettingsProfile(token, profile) {
+  return apiRequest('/settings/profile', {
+    method: 'PUT',
+    token,
+    body: profile,
+  });
+}

@@ -24,6 +24,7 @@ import SalesPage from './pages/SalesPage.jsx';
 import CustomersPage from './pages/CustomersPage.jsx';
 import ExpensesPage from './pages/ExpensesPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 import { StatCard, SalesChart, StockAlerts, RecentSales } from './components/dashboard/DashboardWidgets.jsx';
 import { formatMinor } from './utils/currency.js';
 import Sidebar from './components/layout/Sidebar.jsx';
@@ -85,7 +86,7 @@ export default function App() {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardRefresh, setDashboardRefresh] = useState(0);
-  const { auth, authChecking, login, logout } = useAuth();
+  const { auth, authChecking, login, logout, updateProfile } = useAuth();
 
   useEffect(() => {
     const token = auth?.accessToken;
@@ -324,6 +325,8 @@ export default function App() {
             </>
           ) : activePage === 'Sales' ? (
             <SalesPage token={auth.accessToken} />
+          ) : activePage === 'Settings' ? (
+            <SettingsPage token={auth.accessToken} onProfileUpdated={updateProfile} />
           ) : activePage === 'Reports' ? (
             <ReportsPage token={auth.accessToken} />
           ) : activePage === 'Expenses' ? (

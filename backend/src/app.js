@@ -7,6 +7,7 @@ const customerRoutes = require("./routes/customerRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
+const settingsRoutes = require("./routes/settingsRoutes");
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // Centralized error handler
 app.use((err, req, res, next) => {
