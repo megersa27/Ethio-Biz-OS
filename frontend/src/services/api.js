@@ -231,3 +231,33 @@ export function recordInventoryMovement(token, movement) {
     body: movement,
   });
 }
+
+
+// Business reports. Dates must use YYYY-MM-DD.
+function reportQuery(options = {}) {
+  const query = new URLSearchParams();
+  if (options.startDate) query.set('startDate', options.startDate);
+  if (options.endDate) query.set('endDate', options.endDate);
+  const suffix = query.toString();
+  return suffix ? `?${suffix}` : '';
+}
+
+export function getSalesReport(token, options = {}) {
+  return apiRequest(`/reports/sales${reportQuery(options)}`, { token });
+}
+
+export function getExpensesReport(token, options = {}) {
+  return apiRequest(`/reports/expenses${reportQuery(options)}`, { token });
+}
+
+export function getProfitReport(token, options = {}) {
+  return apiRequest(`/reports/profit${reportQuery(options)}`, { token });
+}
+
+export function getBusinessReportSummary(token, options = {}) {
+  return apiRequest(`/reports/summary${reportQuery(options)}`, { token });
+}
+
+export function getBusinessStockReport(token) {
+  return apiRequest('/reports/stock', { token });
+}
