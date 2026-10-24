@@ -132,6 +132,37 @@ export function getInventoryMovements(token, options = {}) {
   return apiRequest(`/inventory/movements?${query.toString()}`, { token });
 }
 
+// List recent sales with optional pagination and date filters.
+export function getSales(token, options = {}) {
+  const query = new URLSearchParams({
+    page: String(options.page ?? 1),
+    limit: String(options.limit ?? 20),
+  });
+
+  if (options.startDate) query.set('startDate', options.startDate);
+  if (options.endDate) query.set('endDate', options.endDate);
+
+  return apiRequest(`/sales?${query.toString()}`, { token });
+}
+
+// Create a sale. The backend calculates prices and updates stock.
+export function createSale(token, sale) {
+  return apiRequest('/sales', {
+    method: 'POST',
+    token,
+    body: sale,
+  });
+}
+
+// Add a payment to an existing sale with an outstanding balance.
+export function recordSalePayment(token, saleId, payment) {
+  return apiRequest(`/sales/${saleId}/payments`, {
+    method: 'POST',
+    token,
+    body: payment,
+  });
+}
+
 // Record stock received, damaged, expired, or adjusted.
 export function recordInventoryMovement(token, movement) {
   return apiRequest('/inventory/movements', {

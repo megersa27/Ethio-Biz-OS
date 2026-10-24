@@ -20,6 +20,7 @@ import './App.css';
 import AuthPage from './pages/AuthPage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
 import InventoryPage from './pages/InventoryPage.jsx';
+import SalesPage from './pages/SalesPage.jsx';
 import { StatCard, SalesChart, StockAlerts, RecentSales } from './components/dashboard/DashboardWidgets.jsx';
 import { formatMinor } from './utils/currency.js';
 import Sidebar from './components/layout/Sidebar.jsx';
@@ -318,6 +319,8 @@ export default function App() {
                 EthioBiz OS · Business insights made simple · Live business records
               </div>
             </>
+          ) : activePage === 'Sales' ? (
+            <SalesPage token={auth.accessToken} />
           ) : activePage === 'Products' ? (
             <>
               <div className="page-heading">
