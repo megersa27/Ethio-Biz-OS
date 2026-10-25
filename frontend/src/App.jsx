@@ -77,7 +77,6 @@ function PlaceholderPage({ page, setActivePage }) {
 
 export default function App() {
   const [activePage, setActivePage] = useState('Dashboard');
-  const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('This week');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sales, setSales] = useState([]);
@@ -209,9 +208,16 @@ export default function App() {
       <main className="main-area">
         <Topbar
           activePage={activePage}
-          search={search}
-          setSearch={setSearch}
           onOpenMenu={() => setIsSidebarOpen(true)}
+          onNavigate={setActivePage}
+          userName={auth.user?.name}
+          businessName={auth.business?.name}
+          onSettings={() => setActivePage('Settings')}
+          onLogout={logout}
+          recentSales={sales}
+          lowStockItems={lowStockItems}
+          outstandingCreditMinor={dashboardSummary?.outstandingCreditMinor ?? 0}
+          outstandingSaleCount={dashboardSummary?.outstandingSaleCount ?? 0}
         />
 
         <div className="content">
@@ -220,7 +226,7 @@ export default function App() {
               <div className="page-heading">
                 <div>
                   <p className="eyebrow">BUSINESS AT A GLANCE</p>
-                  <h1>Good morning 👋</h1>
+                  <h1>Welcome back, {auth.user?.name || 'there'} 👋</h1>
                   <p>Here’s what’s happening with your business today.</p>
                 </div>
                 <div className="heading-actions">
@@ -253,7 +259,7 @@ export default function App() {
                   {dashboardError ||
                     (dashboardLoading
                       ? 'Fetching sales, expenses, credit and inventory.'
-                      : 'Figures are from your business records. The sales chart below still uses illustrative trends.')}
+                      : 'Figures are from your business records. The sales chart below uses actual sales and recorded expenses for the selected period.')}
                 </span>
               </div>
 
@@ -301,9 +307,9 @@ export default function App() {
 
                             <div className="dashboard-grid">
                 <SalesChart
+                  token={auth.accessToken}
                   period={period}
                   setPeriod={setPeriod}
-                  totalSalesMinor={dashboardSummary?.totalSalesMinor ?? 0}
                 />
                 <StockAlerts
                   items={lowStockItems}
@@ -314,8 +320,7 @@ export default function App() {
 
               <RecentSales
                 sales={sales}
-                search={search}
-                loading={dashboardLoading}
+                      loading={dashboardLoading}
                 setActivePage={setActivePage}
               />
 

@@ -999,3 +999,241 @@
   outline: 2px solid var(--green);
   outline-offset: 2px;
 }
+
+/* Topbar search, notifications and profile dropdowns */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.topbar-actions {
+  position: relative;
+}
+
+.topbar-search-wrap,
+.topbar-menu-wrap {
+  position: relative;
+}
+
+.topbar-search-wrap {
+  display: flex;
+}
+
+.topbar-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 100;
+  width: min(330px, calc(100vw - 28px));
+  max-height: min(430px, calc(100vh - 115px));
+  overflow-y: auto;
+  padding: 8px;
+  background: #fff;
+  color: #172033;
+  border: 1px solid #e1e7ed;
+  border-radius: 13px;
+  box-shadow: 0 16px 42px rgba(21, 35, 27, .16);
+}
+
+.popover-heading {
+  padding: 10px 11px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.search-result-item,
+.notification-item,
+.profile-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px;
+  background: transparent;
+  color: #263447;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-result-item:hover,
+.notification-item:hover,
+.profile-menu-item:hover {
+  background: #f4f7f5;
+}
+
+.search-result-icon,
+.notification-symbol {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #e9f5ee;
+  color: #176b4d;
+}
+
+.notification-symbol.warning {
+  background: #fff2dc;
+  color: #ad6711;
+}
+
+.notification-symbol.credit {
+  background: #eef1ff;
+  color: #5263b7;
+}
+
+.search-result-copy,
+.notification-copy,
+.profile-popover-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-result-copy strong,
+.notification-copy strong,
+.profile-popover-copy strong {
+  overflow: hidden;
+  color: #1c2938;
+  font-size: 12px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-result-copy small,
+.notification-copy small,
+.profile-popover-copy small {
+  color: #718096;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.popover-empty {
+  margin: 0;
+  padding: 13px 11px;
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.popover-footer-button {
+  width: 100%;
+  margin-top: 5px;
+  border: 0;
+  border-top: 1px solid #edf0f3;
+  padding: 12px 8px 8px;
+  background: transparent;
+  color: #176b4d;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.top-profile-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.top-profile-button .top-avatar,
+.profile-popover-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e2f2e9;
+  color: #176b4d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.top-profile-button .top-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.profile-chevron {
+  color: #7d8a83;
+}
+
+.profile-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 10px 14px;
+  border-bottom: 1px solid #edf0f3;
+  margin-bottom: 5px;
+}
+
+.profile-popover-avatar {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+}
+
+.profile-menu-item {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-menu-item.signout-item {
+  color: #b42318;
+}
+
+.chart-period-summary {
+  color: #647b70;
+  font-size: 11px;
+}
+
+.chart-message {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  padding: 18px;
+  color: #718096;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.chart-message-error {
+  color: #b42318;
+}
+
+.chart-expense-total {
+  margin-left: auto;
+  color: #718096;
+  font-size: 11px;
+}
+
+@media (max-width: 600px) {
+  .topbar-popover {
+    right: -4px;
+  }
+
+  .profile-chevron {
+    display: none;
+  }
+
+  .top-profile-button .top-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .chart-period-summary {
+    white-space: normal;
+    text-align: right;
+  }
+}

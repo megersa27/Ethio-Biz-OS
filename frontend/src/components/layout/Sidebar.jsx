@@ -1,6 +1,6 @@
-import { Activity, ArrowRight, CircleHelp, LogOut, Settings } from 'lucide-react';
+import { Activity, ArrowRight, CircleHelp, Settings } from 'lucide-react';
 
-function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar, businessName, userName, onLogout }) {
+function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar }) {
   return (
     <>
       {isOpen && <button className="sidebar-overlay" onClick={closeSidebar} aria-label="Close menu" />}
@@ -52,29 +52,6 @@ function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar, bu
             <p>Find help to get the most out of your business workspace.</p>
             <button className="help-link" onClick={() => setActivePage('Help')}>
               Visit help center <ArrowRight size={13} />
-            </button>
-          </div>
-          <div className="profile-mini">
-            <div className="avatar">
-              {(userName || 'Business owner')
-                .trim()
-                .split(/\s+/)
-                .map((part) => part[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
-            <div className="profile-copy">
-              <p className="profile-name">{userName || 'Business owner'}</p>
-              <p className="profile-role">{businessName || 'My Business'}</p>
-            </div>
-            <button
-              className="profile-more"
-              onClick={onLogout}
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut size={16} />
             </button>
           </div>
         </div>
