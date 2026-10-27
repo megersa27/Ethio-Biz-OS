@@ -75,6 +75,31 @@ function PlaceholderPage({ page, setActivePage }) {
   );
 }
 
+
+function getDashboardPeriodFilters(period, now = new Date()) {
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let start = new Date(end);
+
+  if (period === 'This week') {
+    const mondayOffset = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - mondayOffset);
+  } else if (period === 'This year') {
+    start = new Date(now.getFullYear(), 0, 1);
+  }
+
+  return {
+    startDate: formatDate(start),
+    endDate: formatDate(end),
+  };
+}
+
 export default function App() {
   const [activePage, setActivePage] = useState('Dashboard');
   const [period, setPeriod] = useState('This week');
@@ -101,7 +126,7 @@ export default function App() {
       try {
         const [summaryResult, salesResult, customersResult] =
           await Promise.all([
-            getDashboardSummary(token),
+            getDashboardSummary(token, getDashboardPeriodFilters(period)),
             getRecentSales(token, 5),
             getCustomers(token),
           ]);
@@ -178,7 +203,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [auth?.accessToken, dashboardRefresh]);
+  }, [auth?.accessToken, dashboardRefresh, period]);
 
   if (authChecking) {
     return (
@@ -259,13 +284,13 @@ export default function App() {
                   {dashboardError ||
                     (dashboardLoading
                       ? 'Fetching sales, expenses, credit and inventory.'
-                      : 'Figures are from your business records. The sales chart below uses actual sales and recorded expenses for the selected period.')}
+                      : 'Sales, expenses and profit follow the selected period. Credit and stock alerts show current status; the chart uses recorded sales and expenses.')}
                 </span>
               </div>
 
               <div className="stats-grid">
                 <StatCard
-                  label="Total sales"
+                  label={period === 'Today' ? "Today's sales" : period === 'This year' ? 'Sales this year' : 'Sales this week'}
                   value={dashboardLoading && !dashboardSummary
                     ? 'Loading…'
                     : formatMinor(dashboardSummary?.totalSalesMinor ?? 0)}
@@ -274,7 +299,7 @@ export default function App() {
                   icon={Wallet}
                 />
                 <StatCard
-                  label="Total expenses"
+                  label={period === 'Today' ? "Today's expenses" : period === 'This year' ? 'Expenses this year' : 'Expenses this week'}
                   value={dashboardLoading && !dashboardSummary
                     ? 'Loading…'
                     : formatMinor(dashboardSummary?.totalExpensesMinor ?? 0)}
@@ -284,7 +309,7 @@ export default function App() {
                   color="orange"
                 />
                 <StatCard
-                  label="Net profit"
+                  label={period === 'Today' ? "Today's net profit" : period === 'This year' ? 'Net profit this year' : 'Net profit this week'}
                   value={dashboardLoading && !dashboardSummary
                     ? 'Loading…'
                     : formatMinor(dashboardSummary?.netProfitMinor ?? 0)}

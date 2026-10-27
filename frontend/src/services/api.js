@@ -63,8 +63,13 @@ export function getCurrentUser(token) {
 }
 
 // Dashboard summary: sales, expenses, profit, inventory and credit.
-export function getDashboardSummary(token) {
-  return apiRequest('/reports/summary', { token });
+export function getDashboardSummary(token, options = {}) {
+  const query = new URLSearchParams();
+  if (options.startDate) query.set('startDate', options.startDate);
+  if (options.endDate) query.set('endDate', options.endDate);
+
+  const suffix = query.toString();
+  return apiRequest(`/reports/summary${suffix ? `?${suffix}` : ''}`, { token });
 }
 
 // Inventory health and low-stock products.

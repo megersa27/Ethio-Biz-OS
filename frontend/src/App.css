@@ -1237,3 +1237,28 @@
     text-align: right;
   }
 }
+
+
+/* Keep chart totals readable and separate from their labels. */
+.chart-summary > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.chart-summary-label {
+  display: block;
+  line-height: 1.5;
+}
+
+.chart-summary > div > strong {
+  display: block;
+  line-height: 1.4;
+}
+
+.chart-period-summary {
+  max-width: 45%;
+  text-align: right;
+  line-height: 1.5;
+}
