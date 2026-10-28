@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   Bell,
@@ -9,6 +10,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { formatMinor } from '../../utils/currency.js';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 
 export default function Topbar({
   activePage,
@@ -22,6 +24,7 @@ export default function Topbar({
   outstandingCreditMinor = 0,
   outstandingSaleCount = 0,
 }) {
+  const { t } = useTranslation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const menuRef = useRef(null);
@@ -42,13 +45,16 @@ export default function Topbar({
   const notificationCount =
     lowStockCount + (outstandingSaleCount > 0 ? 1 : 0);
 
-  const initials = (userName || 'Business User')
+  const fallbackName = t('topbar.businessUser');
+  const initials = (userName || fallbackName)
     .trim()
     .split(/\s+/)
     .map((part) => part[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  const breadcrumbLabel = t(`nav.${activePage}`, { defaultValue: activePage });
 
   function openPage(page) {
     onNavigate?.(page);
@@ -63,17 +69,19 @@ export default function Topbar({
           type="button"
           className="icon-button mobile-menu"
           onClick={onOpenMenu}
-          aria-label="Open navigation"
+          aria-label={t('topbar.openNav')}
         >
           <span className="menu-icon"><Boxes size={19} /></span>
         </button>
 
         <div className="breadcrumb">
-          Workspace <span>/</span> <strong>{activePage}</strong>
+          {t('nav.workspace')} <span>/</span> <strong>{breadcrumbLabel}</strong>
         </div>
       </div>
 
       <div className="topbar-actions" ref={menuRef}>
+        <LanguageSwitcher />
+
         <div className="topbar-menu-wrap">
           <button
             type="button"
@@ -82,7 +90,7 @@ export default function Topbar({
               setNotificationsOpen((value) => !value);
               setProfileOpen(false);
             }}
-            aria-label="Notifications"
+            aria-label={t('topbar.notifications')}
             aria-expanded={notificationsOpen}
           >
             <Bell size={17} />
@@ -91,22 +99,22 @@ export default function Topbar({
 
           {notificationsOpen && (
             <div className="topbar-popover notification-popover">
-              <div className="popover-heading">Business notifications</div>
+              <div className="popover-heading">{t('topbar.notifHeading')}</div>
 
               <button
                 type="button"
                 className="notification-item"
-                onClick={() => openPage('Inventory')}
+                onClick={() => openPage('inventory')}
               >
                 <span className="notification-symbol warning">
                   <AlertTriangle size={17} />
                 </span>
                 <span className="notification-copy">
-                  <strong>Low stock</strong>
+                  <strong>{t('topbar.lowStock')}</strong>
                   <small>
                     {lowStockCount > 0
-                      ? `${lowStockCount} product${lowStockCount === 1 ? '' : 's'} need attention.`
-                      : 'No low-stock products reported.'}
+                      ? t('topbar.lowStockMsg', { count: lowStockCount })
+                      : t('topbar.lowStockNone')}
                   </small>
                 </span>
                 <Boxes size={16} />
@@ -115,17 +123,20 @@ export default function Topbar({
               <button
                 type="button"
                 className="notification-item"
-                onClick={() => openPage('Sales')}
+                onClick={() => openPage('sales')}
               >
                 <span className="notification-symbol credit">
                   <Wallet size={17} />
                 </span>
                 <span className="notification-copy">
-                  <strong>Outstanding credit</strong>
+                  <strong>{t('topbar.outstandingCredit')}</strong>
                   <small>
                     {outstandingSaleCount > 0
-                      ? `${outstandingSaleCount} sale${outstandingSaleCount === 1 ? '' : 's'} · ${formatMinor(outstandingCreditMinor)}`
-                      : 'No outstanding sales reported.'}
+                      ? t('topbar.outstandingMsg', {
+                          count: outstandingSaleCount,
+                          amount: formatMinor(outstandingCreditMinor),
+                        })
+                      : t('topbar.outstandingNone')}
                   </small>
                 </span>
               </button>
@@ -141,7 +152,7 @@ export default function Topbar({
               setProfileOpen((value) => !value);
               setNotificationsOpen(false);
             }}
-            aria-label="Open profile menu"
+            aria-label={t('topbar.openProfile')}
             aria-expanded={profileOpen}
           >
             <span className="avatar top-avatar">{initials}</span>
@@ -153,8 +164,8 @@ export default function Topbar({
               <div className="profile-popover-header">
                 <span className="avatar profile-popover-avatar">{initials}</span>
                 <span className="profile-popover-copy">
-                  <strong>{userName || 'Business user'}</strong>
-                  <small>{businessName || 'My Business'}</small>
+                  <strong>{userName || fallbackName}</strong>
+                  <small>{businessName || t('topbar.myBusiness')}</small>
                 </span>
               </div>
 
@@ -166,7 +177,7 @@ export default function Topbar({
                   setProfileOpen(false);
                 }}
               >
-                <Settings size={17} /> Settings and profile
+                <Settings size={17} /> {t('topbar.settingsProfile')}
               </button>
 
               <button
@@ -177,7 +188,7 @@ export default function Topbar({
                   onLogout?.();
                 }}
               >
-                <LogOut size={17} /> Sign out
+                <LogOut size={17} /> {t('topbar.signOut')}
               </button>
             </div>
           )}

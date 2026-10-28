@@ -4,7 +4,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Package,
-  TrendingUp,
 } from 'lucide-react';
 import {
   Area,
@@ -17,16 +16,6 @@ import {
 } from 'recharts';
 import { formatETB, formatMinor } from '../../utils/currency.js';
 import { getSales, getExpenses } from '../../services/api.js';
-
-const salesData = [
-  { day: 'Mon', sales: 3200, expenses: 1800 },
-  { day: 'Tue', sales: 4600, expenses: 2500 },
-  { day: 'Wed', sales: 3800, expenses: 2100 },
-  { day: 'Thu', sales: 5900, expenses: 3200 },
-  { day: 'Fri', sales: 4800, expenses: 2700 },
-  { day: 'Sat', sales: 7200, expenses: 3900 },
-  { day: 'Sun', sales: 6100, expenses: 3400 },
-];
 
 function StatCard({ label, value, change, note, icon: Icon, color, direction = 'up' }) {
   const TrendIcon = direction === 'up' ? ArrowUpRight : ArrowDownRight;

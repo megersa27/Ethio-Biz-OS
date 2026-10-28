@@ -1262,3 +1262,54 @@
   text-align: right;
   line-height: 1.5;
 }
+
+/* Language switcher */
+.language-switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.language-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #647169;
+}
+
+.language-current {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.language-popover {
+  min-width: 184px;
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.language-option.selected {
+  color: #176b4d;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .language-current {
+    display: none;
+  }
+
+  .language-button {
+    width: 38px;
+    padding: 0;
+  }
+}

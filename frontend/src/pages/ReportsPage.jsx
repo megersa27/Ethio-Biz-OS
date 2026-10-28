@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  AlertCircle, BarChart3, Boxes, CalendarDays, CircleDollarSign,
+  AlertCircle, BarChart3, Boxes, CircleDollarSign,
   Download, RefreshCw, TrendingDown, TrendingUp, Wallet,
 } from 'lucide-react';
 import {
@@ -10,7 +10,16 @@ import {
 import { formatMinor } from '../utils/currency.js';
 import './ReportsPage.css';
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Local calendar date (YYYY-MM-DD). The target users are in Ethiopia, so the
+// browser's local zone matches Africa/Addis_Ababa and stays consistent with the
+// dashboard and sales pages. Using UTC here caused an off-by-one near midnight.
+const today = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 function Metric({ label, value, icon: Icon, tone = '' }) {
   return (

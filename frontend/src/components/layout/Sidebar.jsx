@@ -1,6 +1,6 @@
 import { Activity, ArrowRight, CircleHelp, Settings } from 'lucide-react';
 
-function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar }) {
+function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar, lowStockCount = 0 }) {
   return (
     <>
       {isOpen && <button className="sidebar-overlay" onClick={closeSidebar} aria-label="Close menu" />}
@@ -26,7 +26,9 @@ function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar }) 
             >
               <Icon size={18} strokeWidth={1.9} />
               <span>{label}</span>
-              {label === 'Inventory' && <span className="nav-count">4</span>}
+              {label === 'Inventory' && lowStockCount > 0 && (
+                <span className="nav-count">{lowStockCount}</span>
+              )}
             </button>
           ))}
         </nav>

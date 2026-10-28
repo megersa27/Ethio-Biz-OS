@@ -225,6 +225,7 @@ export default function App() {
         setActivePage={setActivePage}
         isOpen={isSidebarOpen}
         closeSidebar={() => setIsSidebarOpen(false)}
+        lowStockCount={lowStockItems.length}
         businessName={auth.business?.name}
         userName={auth.user?.name}
         onLogout={logout}
