@@ -54,7 +54,7 @@ export default function Topbar({
     .slice(0, 2)
     .toUpperCase();
 
-  const breadcrumbLabel = t(`nav.${activePage}`, { defaultValue: activePage });
+  const breadcrumbLabel = t(`nav.${activePage.toLowerCase()}`, { defaultValue: activePage });
 
   function openPage(page) {
     onNavigate?.(page);
@@ -104,7 +104,7 @@ export default function Topbar({
               <button
                 type="button"
                 className="notification-item"
-                onClick={() => openPage('inventory')}
+                onClick={() => openPage('Inventory')}
               >
                 <span className="notification-symbol warning">
                   <AlertTriangle size={17} />
@@ -123,7 +123,7 @@ export default function Topbar({
               <button
                 type="button"
                 className="notification-item"
-                onClick={() => openPage('sales')}
+                onClick={() => openPage('Sales')}
               >
                 <span className="notification-symbol credit">
                   <Wallet size={17} />

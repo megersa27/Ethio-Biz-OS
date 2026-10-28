@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   CalendarDays,
@@ -67,6 +68,7 @@ function formatDate(value) {
 }
 
 export default function ExpensesPage({ token }) {
+  const { t } = useTranslation();
   const [expenses, setExpenses] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [startDate, setStartDate] = useState('');
@@ -104,7 +106,7 @@ export default function ExpensesPage({ token }) {
         }
       } catch (error) {
         if (!cancelled) {
-          setPageError(error.message || 'Expenses could not be loaded.');
+          setPageError(error.message || t('expenses.errLoad'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -116,7 +118,7 @@ export default function ExpensesPage({ token }) {
     return () => {
       cancelled = true;
     };
-  }, [token, startDate, endDate, reloadKey]);
+  }, [token, startDate, endDate, reloadKey, t]);
 
   const filteredExpenses = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -192,12 +194,12 @@ export default function ExpensesPage({ token }) {
         : form.category.trim();
 
     if (!category) {
-      setFormError('Expense category filadhu ykn maqaa isaa barreessi.');
+      setFormError(t('expenses.errCategory'));
       return;
     }
 
     if (category.length > 80) {
-      setFormError('Category characters 80 caaluu hin qabu.');
+      setFormError(t('expenses.errCategoryLen'));
       return;
     }
 
@@ -210,17 +212,17 @@ export default function ExpensesPage({ token }) {
       !Number.isSafeInteger(amountMinor) ||
       amountMinor <= 0
     ) {
-      setFormError('Amount ETB zeeroo caalu galchi.');
+      setFormError(t('expenses.errAmount'));
       return;
     }
 
     if (!form.date || !/^\d{4}-\d{2}-\d{2}$/.test(form.date)) {
-      setFormError('Guyyaa baasii sirrii filadhu.');
+      setFormError(t('expenses.errDate'));
       return;
     }
 
     if (form.description.trim().length > 500) {
-      setFormError('Description characters 500 caaluu hin qabu.');
+      setFormError(t('expenses.errDescLen'));
       return;
     }
 
@@ -236,10 +238,10 @@ export default function ExpensesPage({ token }) {
     try {
       if (editingExpense) {
         await updateExpense(token, editingExpense._id, payload);
-        setNotice('Expense successfully updated.');
+        setNotice(t('expenses.updated'));
       } else {
         await createExpense(token, payload);
-        setNotice('Expense successfully recorded.');
+        setNotice(t('expenses.recorded'));
       }
 
       setFormOpen(false);
@@ -247,7 +249,7 @@ export default function ExpensesPage({ token }) {
       setForm(emptyForm());
       setReloadKey((value) => value + 1);
     } catch (error) {
-      setFormError(error.message || 'Expense could not be saved.');
+      setFormError(error.message || t('expenses.errSave'));
     } finally {
       setSaving(false);
     }
@@ -255,7 +257,7 @@ export default function ExpensesPage({ token }) {
 
   async function handleDeactivate(expense) {
     const confirmed = window.confirm(
-      `Deactivate this ${expense.category} expense? Historical records will be retained.`
+      t('expenses.confirmDeactivate', { category: expense.category })
     );
 
     if (!confirmed) return;
@@ -265,10 +267,10 @@ export default function ExpensesPage({ token }) {
 
     try {
       await deactivateExpense(token, expense._id);
-      setNotice('Expense deactivated successfully.');
+      setNotice(t('expenses.deactivated'));
       setReloadKey((value) => value + 1);
     } catch (error) {
-      setPageError(error.message || 'Expense could not be deactivated.');
+      setPageError(error.message || t('expenses.errDeactivate'));
     }
   }
 
@@ -276,9 +278,9 @@ export default function ExpensesPage({ token }) {
     <section className="expenses-page">
       <div className="expenses-heading">
         <div>
-          <p className="eyebrow">YOUR BUSINESS WORKSPACE</p>
-          <h1>Expenses</h1>
-          <p>Record business spending and keep track of where money goes.</p>
+          <p className="eyebrow">{t('expenses.eyebrow')}</p>
+          <h1>{t('expenses.title')}</h1>
+          <p>{t('expenses.lead')}</p>
         </div>
 
         <div className="expenses-heading-actions">
@@ -289,14 +291,14 @@ export default function ExpensesPage({ token }) {
             disabled={loading}
           >
             <RefreshCw size={16} />
-            {loading ? 'Loading…' : 'Refresh'}
+            {loading ? t('common.loading') : t('common.refresh')}
           </button>
           <button
             type="button"
             className="primary-button"
             onClick={openCreateForm}
           >
-            <Plus size={16} /> Add expense
+            <Plus size={16} /> {t('expenses.addExpense')}
           </button>
         </div>
       </div>
@@ -312,7 +314,7 @@ export default function ExpensesPage({ token }) {
         <div className="expenses-alert expenses-alert-success" role="status">
           <CheckCircle2 size={18} />
           <span>{notice}</span>
-          <button type="button" onClick={() => setNotice('')} aria-label="Dismiss">
+          <button type="button" onClick={() => setNotice('')} aria-label={t('common.dismiss')}>
             <X size={16} />
           </button>
         </div>
@@ -322,18 +324,18 @@ export default function ExpensesPage({ token }) {
         <article className="expenses-summary-card">
           <div className="expenses-summary-icon"><Wallet size={20} /></div>
           <div>
-            <p>Total expenses shown</p>
-            <strong>{loading ? '…' : formatMinor(totalMinor)}</strong>
-            <span>Based on the current date filter and search</span>
+            <p>{t('expenses.totalShown')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : formatMinor(totalMinor)}</strong>
+            <span>{t('expenses.totalNote')}</span>
           </div>
         </article>
 
         <article className="expenses-summary-card">
           <div className="expenses-summary-icon"><CreditCard size={20} /></div>
           <div>
-            <p>Expense records shown</p>
-            <strong>{loading ? '…' : filteredExpenses.length}</strong>
-            <span>Of {pagination?.totalItems ?? expenses.length} loaded records</span>
+            <p>{t('expenses.recordsShown')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : filteredExpenses.length}</strong>
+            <span>{t('expenses.ofLoaded', { total: pagination?.totalItems ?? expenses.length })}</span>
           </div>
         </article>
       </div>
@@ -345,15 +347,15 @@ export default function ExpensesPage({ token }) {
               {editingExpense ? <Edit2 size={19} /> : <Plus size={19} />}
             </div>
             <div>
-              <h2>{editingExpense ? 'Edit expense' : 'Record an expense'}</h2>
-              <p>Amount is entered in ETB; it is stored as integer santim.</p>
+              <h2>{editingExpense ? t('expenses.editTitle') : t('expenses.recordTitle')}</h2>
+              <p>{t('expenses.formLead')}</p>
             </div>
             <button
               type="button"
               className="expenses-close"
               onClick={closeForm}
               disabled={saving}
-              aria-label="Close expense form"
+              aria-label={t('expenses.closeAria')}
             >
               <X size={18} />
             </button>
@@ -362,7 +364,7 @@ export default function ExpensesPage({ token }) {
           <form className="expenses-form" onSubmit={handleSubmit}>
             <div className="expenses-form-grid">
               <label>
-                Category
+                {t('expenses.category')}
                 <select
                   name="category"
                   value={form.category}
@@ -378,7 +380,7 @@ export default function ExpensesPage({ token }) {
 
               {form.category === 'Other' && (
                 <label>
-                  Custom category
+                  {t('expenses.customCategory')}
                   <input
                     name="customCategory"
                     value={form.customCategory}
@@ -386,13 +388,13 @@ export default function ExpensesPage({ token }) {
                     maxLength={80}
                     required
                     disabled={saving}
-                    placeholder="Type expense category"
+                    placeholder={t('expenses.customPh')}
                   />
                 </label>
               )}
 
               <label>
-                Amount (ETB)
+                {t('expenses.amount')}
                 <input
                   name="amount"
                   type="number"
@@ -402,12 +404,12 @@ export default function ExpensesPage({ token }) {
                   step="0.01"
                   required
                   disabled={saving}
-                  placeholder="e.g. 250.00"
+                  placeholder={t('expenses.amountPh')}
                 />
               </label>
 
               <label>
-                Expense date
+                {t('expenses.expenseDate')}
                 <input
                   name="date"
                   type="date"
@@ -419,7 +421,7 @@ export default function ExpensesPage({ token }) {
               </label>
 
               <label className="expenses-description-field">
-                Description / Notes
+                {t('expenses.description')}
                 <textarea
                   name="description"
                   value={form.description}
@@ -427,7 +429,7 @@ export default function ExpensesPage({ token }) {
                   maxLength={500}
                   rows={3}
                   disabled={saving}
-                  placeholder="What was this expense for?"
+                  placeholder={t('expenses.descriptionPh')}
                 />
               </label>
             </div>
@@ -446,14 +448,14 @@ export default function ExpensesPage({ token }) {
                 onClick={closeForm}
                 disabled={saving}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" className="primary-button" disabled={saving}>
                 {saving
-                  ? 'Saving…'
+                  ? t('common.saving')
                   : editingExpense
-                    ? 'Save changes'
-                    : 'Record expense'}
+                    ? t('common.saveChanges')
+                    : t('expenses.recordExpense')}
               </button>
             </div>
           </form>
@@ -463,11 +465,11 @@ export default function ExpensesPage({ token }) {
       <div className="expenses-panel expenses-history-panel">
         <div className="expenses-table-heading">
           <div>
-            <h2>Expense history</h2>
+            <h2>{t('expenses.history')}</h2>
             <p>
               {pagination
-                ? `${pagination.totalItems} active records in the selected period`
-                : 'Review and manage your business expenses'}
+                ? t('expenses.historyCount', { count: pagination.totalItems })
+                : t('expenses.historyDefault')}
             </p>
           </div>
           <label className="expenses-search">
@@ -476,11 +478,11 @@ export default function ExpensesPage({ token }) {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search category or description…"
-              aria-label="Search expenses"
+              placeholder={t('expenses.searchPh')}
+              aria-label={t('expenses.searchAria')}
             />
             {search && (
-              <button type="button" onClick={() => setSearch('')} aria-label="Clear search">
+              <button type="button" onClick={() => setSearch('')} aria-label={t('expenses.clearSearchAria')}>
                 <X size={15} />
               </button>
             )}
@@ -489,7 +491,7 @@ export default function ExpensesPage({ token }) {
 
         <div className="expenses-date-filters">
           <label>
-            <CalendarDays size={15} /> From
+            <CalendarDays size={15} /> {t('expenses.from')}
             <input
               type="date"
               value={startDate}
@@ -498,7 +500,7 @@ export default function ExpensesPage({ token }) {
             />
           </label>
           <label>
-            <CalendarDays size={15} /> To
+            <CalendarDays size={15} /> {t('expenses.to')}
             <input
               type="date"
               value={endDate}
@@ -515,7 +517,7 @@ export default function ExpensesPage({ token }) {
                 setEndDate('');
               }}
             >
-              Clear dates
+              {t('common.clearDates')}
             </button>
           )}
         </div>
@@ -524,22 +526,22 @@ export default function ExpensesPage({ token }) {
           <table className="expenses-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Actions</th>
+                <th>{t('expenses.thDate')}</th>
+                <th>{t('expenses.thCategory')}</th>
+                <th>{t('expenses.thDescription')}</th>
+                <th>{t('expenses.thAmount')}</th>
+                <th>{t('expenses.thActions')}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} className="expenses-empty">Loading expenses…</td></tr>
+                <tr><td colSpan={5} className="expenses-empty">{t('expenses.loadingExpenses')}</td></tr>
               ) : filteredExpenses.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="expenses-empty">
                     {search || startDate || endDate
-                      ? 'No expenses match the selected filters.'
-                      : 'No expenses recorded yet. Add your first expense above.'}
+                      ? t('expenses.noMatch')
+                      : t('expenses.none')}
                   </td>
                 </tr>
               ) : (
@@ -556,8 +558,8 @@ export default function ExpensesPage({ token }) {
                         <button
                           type="button"
                           onClick={() => openEditForm(expense)}
-                          aria-label={`Edit ${expense.category} expense`}
-                          title="Edit expense"
+                          aria-label={t('expenses.editAria', { category: expense.category })}
+                          title={t('expenses.editTitle')}
                         >
                           <Edit2 size={15} />
                         </button>
@@ -565,8 +567,8 @@ export default function ExpensesPage({ token }) {
                           type="button"
                           className="expenses-deactivate"
                           onClick={() => handleDeactivate(expense)}
-                          aria-label={`Deactivate ${expense.category} expense`}
-                          title="Deactivate expense"
+                          aria-label={t('expenses.deactivateAria', { category: expense.category })}
+                          title={t('expenses.deactivateAria', { category: expense.category })}
                         >
                           <Trash2 size={15} />
                         </button>
@@ -580,7 +582,7 @@ export default function ExpensesPage({ token }) {
         </div>
 
         <div className="expenses-table-footer">
-          Showing up to 50 records. Use the date filters to narrow the period.
+          {t('expenses.footer')}
         </div>
       </div>
     </section>

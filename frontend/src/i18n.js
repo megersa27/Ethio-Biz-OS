@@ -41,4 +41,12 @@ i18n
     returnNull: false,
   });
 
+if (typeof document !== 'undefined') {
+  const currentLang = i18n.resolvedLanguage || i18n.language || 'en';
+  document.documentElement.lang = currentLang;
+  i18n.on('languageChanged', (lng) => {
+    document.documentElement.lang = lng;
+  });
+}
+
 export default i18n;

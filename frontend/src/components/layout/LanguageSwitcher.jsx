@@ -6,12 +6,13 @@ import { supportedLanguages } from '../../i18n.js';
 
 // Compact language switcher. Selecting a language re-renders the whole app
 // in that language via react-i18next; the choice persists in localStorage.
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ className = '' }) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
-  const current = i18n.resolvedLanguage || i18n.language || 'en';
+  const rawLang = i18n.resolvedLanguage || i18n.language || 'en';
+  const current = rawLang.split('-')[0];
 
   useEffect(() => {
     function close(event) {
@@ -29,14 +30,11 @@ export default function LanguageSwitcher() {
     setOpen(false);
   }
 
-  const currentLabel = supportedLanguages.find(
-    (language) => language.code === current
-  )?.labelKey
-    ? t(supportedLanguages.find((language) => language.code === current).labelKey)
-    : current;
+  const currentConfig = supportedLanguages.find((l) => l.code === current) || supportedLanguages[0];
+  const currentLabel = currentConfig?.labelKey ? t(currentConfig.labelKey) : current;
 
   return (
-    <div className="language-switcher" ref={wrapRef}>
+    <div className={`language-switcher ${className}`.trim()} ref={wrapRef}>
       <button
         type="button"
         className="icon-button language-button"

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Building2, RefreshCw, Save, UserRound } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { AlertCircle, Building2, Check, Globe, RefreshCw, Save, UserRound } from 'lucide-react';
 import {
   getSettingsProfile,
   updateSettingsProfile,
 } from '../services/api.js';
+import { supportedLanguages } from '../i18n.js';
 import './SettingsPage.css';
 
 const emptyForm = {
@@ -16,6 +18,7 @@ const emptyForm = {
 };
 
 export default function SettingsPage({ token, onProfileUpdated }) {
+  const { t, i18n } = useTranslation();
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
@@ -39,11 +42,11 @@ export default function SettingsPage({ token, onProfileUpdated }) {
         ownerPhone: current.user.phone || '',
       });
     } catch (err) {
-      setError(err.message || 'Profile information could not be loaded.');
+      setError(err.message || t('settings.errLoad'));
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
 
@@ -86,38 +89,39 @@ export default function SettingsPage({ token, onProfileUpdated }) {
         ownerPhone: result.profile.user.phone || '',
       });
       if (onProfileUpdated) onProfileUpdated(result.profile);
-      setNotice('Settings saved successfully.');
+      setNotice(t('settings.saved'));
     } catch (err) {
-      setError(err.message || 'Settings could not be saved.');
+      setError(err.message || t('settings.errSave'));
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <div className="settings-loading"><RefreshCw size={19} /> Loading settings…</div>;
+    return <div className="settings-loading"><RefreshCw size={19} /> {t('settings.loadingSettings')}</div>;
   }
 
   if (!profile) {
     return (
       <section className="settings-page">
         <div className="settings-message settings-error">
-          <AlertCircle size={18} /> {error || 'Profile unavailable.'}
-          <button type="button" onClick={loadProfile}>Try again</button>
+          <AlertCircle size={18} /> {error || t('settings.unavailable')}
+          <button type="button" onClick={loadProfile}>{t('common.retry')}</button>
         </div>
       </section>
     );
   }
 
   const canEditBusiness = profile.user.role === 'OWNER';
+  const currentLang = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
 
   return (
     <section className="settings-page">
       <header className="settings-heading">
         <div>
-          <p className="settings-eyebrow">WORKSPACE PREFERENCES</p>
-          <h1>Settings</h1>
-          <p>Manage your business information and personal account details.</p>
+          <p className="settings-eyebrow">{t('settings.eyebrow')}</p>
+          <h1>{t('settings.title')}</h1>
+          <p>{t('settings.lead')}</p>
         </div>
       </header>
 
@@ -129,32 +133,72 @@ export default function SettingsPage({ token, onProfileUpdated }) {
       <form onSubmit={handleSubmit} className="settings-form">
         <section className="settings-card">
           <div className="settings-card-heading">
+            <div className="settings-icon"><Globe size={20} /></div>
+            <div>
+              <h2>{t('language.label')}</h2>
+              <p>{t('language.label')}</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '8px' }}>
+            {supportedLanguages.map((lang) => {
+              const isActive = currentLang === lang.code;
+              return (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => i18n.changeLanguage(lang.code)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    border: isActive ? '2px solid #176b4d' : '1px solid #d5ded8',
+                    background: isActive ? '#e7f4ed' : '#ffffff',
+                    color: isActive ? '#176b4d' : '#233229',
+                    fontWeight: isActive ? '700' : '500',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Globe size={16} />
+                  <span>{t(lang.labelKey)}</span>
+                  {isActive && <Check size={16} color="#176b4d" />}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="settings-card">
+          <div className="settings-card-heading">
             <div className="settings-icon"><Building2 size={20} /></div>
-            <div><h2>Business profile</h2>
-              <p>Contact and identification details for your workspace.</p></div>
+            <div><h2>{t('settings.businessProfile')}</h2>
+              <p>{t('settings.businessLead')}</p></div>
           </div>
 
           {!canEditBusiness && (
-            <p className="settings-readonly">Only the business owner can change these details.</p>
+            <p className="settings-readonly">{t('settings.readonlyNote')}</p>
           )}
 
           <div className="settings-fields">
             <label className="settings-field settings-wide">
-              <span>Business name</span>
+              <span>{t('settings.businessName')}</span>
               <input required maxLength={150} value={form.businessName}
                 onChange={change('businessName')} disabled={!canEditBusiness} />
             </label>
             <label className="settings-field">
-              <span>Business phone</span>
+              <span>{t('settings.businessPhone')}</span>
               <input maxLength={30} value={form.businessPhone}
                 onChange={change('businessPhone')} disabled={!canEditBusiness}
-                placeholder="Business contact number" />
+                placeholder={t('settings.businessPhonePh')} />
             </label>
             <label className="settings-field settings-wide">
-              <span>Business address</span>
+              <span>{t('settings.businessAddress')}</span>
               <textarea rows={3} maxLength={300} value={form.address}
                 onChange={change('address')} disabled={!canEditBusiness}
-                placeholder="Town, area, street or other address details" />
+                placeholder={t('settings.businessAddressPh')} />
             </label>
           </div>
         </section>
@@ -162,40 +206,40 @@ export default function SettingsPage({ token, onProfileUpdated }) {
         <section className="settings-card">
           <div className="settings-card-heading">
             <div className="settings-icon"><UserRound size={20} /></div>
-            <div><h2>Personal profile</h2>
-              <p>Your account details used in the workspace.</p></div>
+            <div><h2>{t('settings.personalProfile')}</h2>
+              <p>{t('settings.personalLead')}</p></div>
           </div>
 
           <div className="settings-fields">
             <label className="settings-field settings-wide">
-              <span>Name</span>
+              <span>{t('settings.name')}</span>
               <input required maxLength={100} value={form.ownerName}
                 onChange={change('ownerName')} />
             </label>
             <label className="settings-field">
-              <span>Email address</span>
+              <span>{t('settings.emailAddress')}</span>
               <input type="email" maxLength={254} value={form.email}
-                onChange={change('email')} placeholder="name@example.com" />
+                onChange={change('email')} placeholder={t('settings.emailPh')} />
             </label>
             <label className="settings-field">
-              <span>Personal phone</span>
+              <span>{t('settings.personalPhone')}</span>
               <input maxLength={30} value={form.ownerPhone}
-                onChange={change('ownerPhone')} placeholder="+251…" />
+                onChange={change('ownerPhone')} placeholder={t('settings.phonePh')} />
             </label>
           </div>
-          <p className="settings-hint">At least one of your email address or personal phone number is required for login.</p>
+          <p className="settings-hint">{t('settings.hint')}</p>
           <div className="settings-account-meta">
-            <span>Account role</span><strong>{profile.user.role}</strong>
+            <span>{t('settings.accountRole')}</span><strong>{profile.user.role}</strong>
           </div>
         </section>
 
         <div className="settings-actions">
           <button type="button" className="settings-secondary" onClick={loadProfile} disabled={saving}>
-            <RefreshCw size={16} /> Reload
+            <RefreshCw size={16} /> {t('settings.reload')}
           </button>
           <button type="submit" className="settings-save" disabled={saving}>
             {saving ? <RefreshCw size={16} /> : <Save size={16} />}
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? t('common.saving') : t('common.saveChanges')}
           </button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Edit2,
   Package,
@@ -58,21 +59,8 @@ const formatETB = (minor) =>
     maximumFractionDigits: 2,
   }).format((Number(minor) || 0) / 100);
 
-function toMinor(value, fieldName) {
-  if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0) {
-    throw new Error(`${fieldName} must be a valid non-negative amount.`);
-  }
-
-  const minor = Math.round(Number(value) * 100);
-
-  if (!Number.isSafeInteger(minor)) {
-    throw new Error(`${fieldName} is too large.`);
-  }
-
-  return minor;
-}
-
 export default function ProductsPage({ token }) {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,6 +71,20 @@ export default function ProductsPage({ token }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
+  function toMinor(value, fieldName) {
+    if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0) {
+      throw new Error(fieldName === 'Cost price' ? t('products.errCost') : t('products.errSelling'));
+    }
+
+    const minor = Math.round(Number(value) * 100);
+
+    if (!Number.isSafeInteger(minor)) {
+      throw new Error(fieldName === 'Cost price' ? t('products.errCostLarge') : t('products.errSellingLarge'));
+    }
+
+    return minor;
+  }
+
   const loadProducts = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -91,11 +93,11 @@ export default function ProductsPage({ token }) {
       const result = await getProducts(token);
       setProducts(result.products || []);
     } catch (requestError) {
-      setError(requestError.message || 'Could not load products.');
+      setError(requestError.message || t('products.errLoad'));
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     loadProducts();
@@ -159,7 +161,7 @@ export default function ProductsPage({ token }) {
       const minimumStockLevel = Number(form.minimumStockLevel);
 
       if (!Number.isFinite(minimumStockLevel) || minimumStockLevel < 0) {
-        throw new Error('Minimum stock level must be zero or greater.');
+        throw new Error(t('products.errMinStock'));
       }
 
       const productData = {
@@ -171,25 +173,25 @@ export default function ProductsPage({ token }) {
       };
 
       if (!productData.name) {
-        throw new Error('Product name is required.');
+        throw new Error(t('products.errName'));
       }
 
       if (editingProduct) {
         await updateProduct(token, editingProduct._id, productData);
-        setNotice('Product updated successfully.');
+        setNotice(t('products.updated'));
       } else {
         await createProduct(token, {
           ...productData,
           unit: form.unit,
           stockQuantity: 0,
         });
-        setNotice('Product created successfully. Record incoming stock in Inventory.');
+        setNotice(t('products.created'));
       }
 
       closeForm();
       await loadProducts();
     } catch (requestError) {
-      setError(requestError.message || 'Could not save product.');
+      setError(requestError.message || t('products.errSave'));
     } finally {
       setSaving(false);
     }
@@ -197,7 +199,7 @@ export default function ProductsPage({ token }) {
 
   async function handleDeactivate(product) {
     const confirmed = window.confirm(
-      `Deactivate "${product.name}"? It will no longer appear in the active product list.`
+      t('products.confirmDeactivate', { name: product.name })
     );
 
     if (!confirmed) return;
@@ -207,10 +209,10 @@ export default function ProductsPage({ token }) {
 
     try {
       await deactivateProduct(token, product._id);
-      setNotice(`"${product.name}" was deactivated.`);
+      setNotice(t('products.deactivated', { name: product.name }));
       await loadProducts();
     } catch (requestError) {
-      setError(requestError.message || 'Could not deactivate product.');
+      setError(requestError.message || t('products.errDeactivate'));
     }
   }
 
@@ -221,8 +223,8 @@ export default function ProductsPage({ token }) {
           <Package size={22} />
         </div>
         <div>
-          <span>Active products</span>
-          <strong>{loading ? '…' : products.length}</strong>
+          <span>{t('products.activeProducts')}</span>
+          <strong>{loading ? t('common.loadingEllipsis') : products.length}</strong>
         </div>
         <button
           className="secondary-button products-refresh"
@@ -230,7 +232,7 @@ export default function ProductsPage({ token }) {
           disabled={loading}
         >
           <RefreshCw size={15} />
-          Refresh
+          {t('common.refresh')}
         </button>
       </div>
 
@@ -249,14 +251,14 @@ export default function ProductsPage({ token }) {
       <section className="panel products-panel">
         <div className="panel-header products-toolbar">
           <div>
-            <h2 className="panel-title">Product catalogue</h2>
+            <h2 className="panel-title">{t('products.catalogue')}</h2>
             <p className="panel-subtitle">
-              Manage product details, prices and reorder levels.
+              {t('products.catalogueLead')}
             </p>
           </div>
           <button className="primary-button" onClick={openCreateForm}>
             <Plus size={16} />
-            Add product
+            {t('products.addProduct')}
           </button>
         </div>
 
@@ -265,14 +267,14 @@ export default function ProductsPage({ token }) {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by product, category or unit..."
-            aria-label="Search products"
+            placeholder={t('products.searchPh')}
+            aria-label={t('products.searchAria')}
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              aria-label="Clear product search"
+              aria-label={t('products.clearSearchAria')}
             >
               <X size={15} />
             </button>
@@ -283,14 +285,14 @@ export default function ProductsPage({ token }) {
           <table className="data-table products-table">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Cost price</th>
-                <th>Selling price</th>
-                <th>Stock</th>
-                <th>Reorder at</th>
-                <th>Stock status</th>
-                <th>Actions</th>
+                <th>{t('products.thProduct')}</th>
+                <th>{t('products.thCategory')}</th>
+                <th>{t('products.thCostPrice')}</th>
+                <th>{t('products.thSellingPrice')}</th>
+                <th>{t('products.thStock')}</th>
+                <th>{t('products.thReorderAt')}</th>
+                <th>{t('products.thStockStatus')}</th>
+                <th>{t('products.thActions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -315,7 +317,7 @@ export default function ProductsPage({ token }) {
                     <td>{product.minimumStockLevel ?? 0}</td>
                     <td>
                       <span className={`product-stock-badge ${lowStock ? 'low' : 'good'}`}>
-                        {lowStock ? 'Low stock' : 'In stock'}
+                        {lowStock ? t('products.lowStock') : t('products.inStock')}
                       </span>
                     </td>
                     <td>
@@ -324,8 +326,8 @@ export default function ProductsPage({ token }) {
                           type="button"
                           className="product-action-button"
                           onClick={() => openEditForm(product)}
-                          aria-label={`Edit ${product.name}`}
-                          title="Edit product"
+                          aria-label={t('products.editAria', { name: product.name })}
+                          title={t('products.editTitle')}
                         >
                           <Edit2 size={15} />
                         </button>
@@ -333,8 +335,8 @@ export default function ProductsPage({ token }) {
                           type="button"
                           className="product-action-button deactivate"
                           onClick={() => handleDeactivate(product)}
-                          aria-label={`Deactivate ${product.name}`}
-                          title="Deactivate product"
+                          aria-label={t('products.deactivateAria', { name: product.name })}
+                          title={t('products.deactivateTitle')}
                         >
                           <Archive size={15} />
                         </button>
@@ -348,8 +350,8 @@ export default function ProductsPage({ token }) {
                 <tr>
                   <td colSpan="8" className="products-empty">
                     {search
-                      ? 'No products match your search.'
-                      : 'No active products yet. Add your first product to get started.'}
+                      ? t('products.noMatch')
+                      : t('products.none')}
                   </td>
                 </tr>
               )}
@@ -357,7 +359,7 @@ export default function ProductsPage({ token }) {
               {loading && (
                 <tr>
                   <td colSpan="8" className="products-empty">
-                    Loading products…
+                    {t('products.loadingProducts')}
                   </td>
                 </tr>
               )}
@@ -366,7 +368,7 @@ export default function ProductsPage({ token }) {
         </div>
 
         <div className="products-table-footer">
-          Showing {filteredProducts.length} of {products.length} active products
+          {t('products.showingActive', { shown: filteredProducts.length, total: products.length })}
         </div>
       </section>
 
@@ -385,34 +387,34 @@ export default function ProductsPage({ token }) {
           >
             <div className="products-modal-header">
               <div>
-                <span className="products-form-eyebrow">PRODUCT MANAGEMENT</span>
+                <span className="products-form-eyebrow">{t('products.formEyebrow')}</span>
                 <h2 id="product-form-title">
-                  {editingProduct ? 'Edit product' : 'Add a product'}
+                  {editingProduct ? t('products.editTitle2') : t('products.addTitle')}
                 </h2>
                 <p>
                   {editingProduct
-                    ? 'Update product details and pricing.'
-                    : 'Enter the details of the product you sell.'}
+                    ? t('products.editLead')
+                    : t('products.addLead')}
                 </p>
               </div>
             </div>
 
             <form className="products-form" onSubmit={handleSubmit}>
               <label>
-                Product name
+                {t('products.name')}
                 <input
                   name="name"
                   value={form.name}
                   onChange={updateField}
                   maxLength={150}
-                  placeholder="e.g. Cooking Oil 5L"
+                  placeholder={t('products.namePh')}
                   required
                 />
               </label>
 
               <div className="products-form-grid">
                 <label>
-                  Category
+                  {t('products.category')}
                   <select
                     name="category"
                     value={form.category}
@@ -431,7 +433,7 @@ export default function ProductsPage({ token }) {
                 </label>
 
                 <label>
-                  Unit
+                  {t('products.unit')}
                   <select
                     name="unit"
                     value={form.unit}
@@ -445,7 +447,7 @@ export default function ProductsPage({ token }) {
                 </label>
 
                 <label>
-                  Cost price (ETB)
+                  {t('products.costPrice')}
                   <input
                     name="costPrice"
                     type="number"
@@ -459,7 +461,7 @@ export default function ProductsPage({ token }) {
                 </label>
 
                 <label>
-                  Selling price (ETB)
+                  {t('products.sellingPrice')}
                   <input
                     name="sellingPrice"
                     type="number"
@@ -473,7 +475,7 @@ export default function ProductsPage({ token }) {
                 </label>
 
                 <label className="products-form-full">
-                  Reorder level
+                  {t('products.reorderLevel')}
                   <input
                     name="minimumStockLevel"
                     type="number"
@@ -488,8 +490,7 @@ export default function ProductsPage({ token }) {
 
               {!editingProduct && (
                 <p className="products-form-note">
-                  New products start with zero stock. Record incoming stock in
-                  Inventory so the stock movement history remains accurate.
+                  {t('products.formNote')}
                 </p>
               )}
 
@@ -506,14 +507,14 @@ export default function ProductsPage({ token }) {
                   onClick={closeForm}
                   disabled={saving}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button className="primary-button" type="submit" disabled={saving}>
                   {saving
-                    ? 'Saving…'
+                    ? t('common.saving')
                     : editingProduct
-                      ? 'Save changes'
-                      : 'Create product'}
+                      ? t('common.saveChanges')
+                      : t('products.createProduct')}
                 </button>
               </div>
             </form>

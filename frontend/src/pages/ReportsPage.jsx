@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertCircle, BarChart3, Boxes, CircleDollarSign,
   Download, RefreshCw, TrendingDown, TrendingUp, Wallet,
@@ -33,6 +34,7 @@ function Metric({ label, value, icon: Icon, tone = '' }) {
 }
 
 export default function ReportsPage({ token }) {
+  const { t } = useTranslation();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState(today());
   const [activeTab, setActiveTab] = useState('Overview');
@@ -65,11 +67,11 @@ export default function ReportsPage({ token }) {
       setProfit(results[3].report);
       setStock(results[4].report);
     } catch (err) {
-      setError(err.message || 'Gabaasa fe’uun hin danda’amne.');
+      setError(err.message || t('reports.errLoad'));
     } finally {
       setLoading(false);
     }
-  }, [token, startDate, endDate]);
+  }, [token, startDate, endDate, t]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
@@ -116,76 +118,82 @@ export default function ReportsPage({ token }) {
     URL.revokeObjectURL(url);
   };
 
-  const tabs = ['Overview', 'Sales', 'Expenses', 'Profit', 'Stock'];
+  const tabs = [
+    { id: 'Overview', label: t('reports.tabOverview') },
+    { id: 'Sales', label: t('reports.tabSales') },
+    { id: 'Expenses', label: t('reports.tabExpenses') },
+    { id: 'Profit', label: t('reports.tabProfit') },
+    { id: 'Stock', label: t('reports.tabStock') },
+  ];
 
   return (
     <section className="reports-page">
       <header className="reports-heading">
         <div>
-          <p className="reports-eyebrow">BUSINESS PERFORMANCE</p>
-          <h1>Reports &amp; Analytics</h1>
-          <p>Review sales, expenses, profit and inventory from your business records.</p>
+          <p className="reports-eyebrow">{t('reports.eyebrow')}</p>
+          <h1>{t('reports.title')}</h1>
+          <p>{t('reports.lead')}</p>
         </div>
         <button className="reports-export" onClick={exportCsv} disabled={loading || !summary}>
-          <Download size={16} /> Export CSV
+          <Download size={16} /> {t('reports.exportCsv')}
         </button>
       </header>
 
       <div className="reports-filters">
         <label>
-          <span>Start date</span>
+          <span>{t('reports.startDate')}</span>
           <input type="date" value={startDate} max={endDate || undefined}
             onChange={(e) => setStartDate(e.target.value)} />
         </label>
         <label>
-          <span>End date</span>
+          <span>{t('reports.endDate')}</span>
           <input type="date" value={endDate} min={startDate || undefined}
             max={today()} onChange={(e) => setEndDate(e.target.value)} />
         </label>
         <button onClick={() => { setStartDate(''); setEndDate(today()); }}>
-          Clear dates
+          {t('common.clearDates')}
         </button>
         <button onClick={loadReports} disabled={loading}>
-          <RefreshCw size={15} /> Refresh
+          <RefreshCw size={15} /> {t('reports.refresh')}
         </button>
       </div>
 
-      <nav className="reports-tabs" aria-label="Report categories">
+      <nav className="reports-tabs" aria-label={t('reports.tabsAria')}>
         {tabs.map((tab) => (
-          <button key={tab} className={activeTab === tab ? 'active' : ''}
-            onClick={() => setActiveTab(tab)}>{tab}</button>
+          <button key={tab.id} className={activeTab === tab.id ? 'active' : ''}
+            onClick={() => setActiveTab(tab.id)}>{tab.label}</button>
         ))}
       </nav>
 
       {error && (
         <div className="reports-error"><AlertCircle size={18} /><span>{error}</span>
-          <button onClick={loadReports}>Try again</button>
+          <button onClick={loadReports}>{t('common.retry')}</button>
         </div>
       )}
 
       {loading && !summary ? (
-        <div className="reports-loading"><RefreshCw size={20} /> Loading reports…</div>
+        <div className="reports-loading"><RefreshCw size={20} /> {t('reports.loadingReports')}</div>
       ) : (
         <>
           {activeTab === 'Overview' && (
             <>
               <div className="reports-metrics">
-                <Metric label="Total sales" value={money(summary?.totalSalesMinor)} icon={CircleDollarSign} />
-                <Metric label="Gross profit" value={money(summary?.grossProfitMinor)} icon={TrendingUp} tone="positive" />
-                <Metric label="Total expenses" value={money(summary?.totalExpensesMinor)} icon={TrendingDown} />
-                <Metric label="Net profit" value={money(summary?.netProfitMinor)} icon={Wallet}
+                <Metric label={t('reports.mTotalSales')} value={money(summary?.totalSalesMinor)} icon={CircleDollarSign} />
+                <Metric label={t('reports.mGrossProfit')} value={money(summary?.grossProfitMinor)} icon={TrendingUp} tone="positive" />
+                <Metric label={t('reports.mTotalExpenses')} value={money(summary?.totalExpensesMinor)} icon={TrendingDown} />
+                <Metric label={t('reports.mNetProfit')} value={money(summary?.netProfitMinor)} icon={Wallet}
                   tone={(summary?.netProfitMinor || 0) >= 0 ? 'positive' : 'negative'} />
-                <Metric label="Outstanding credit" value={money(summary?.outstandingCreditMinor)} icon={CircleDollarSign} />
-                <Metric label="Stock value" value={money(summary?.inventoryValueMinor)} icon={Boxes} />
+                <Metric label={t('reports.mOutstandingCredit')} value={money(summary?.outstandingCreditMinor)} icon={CircleDollarSign} />
+                <Metric label={t('reports.mStockValue')} value={money(summary?.inventoryValueMinor)} icon={Boxes} />
               </div>
               <div className="reports-panel">
-                <h2><BarChart3 size={19} /> Business overview</h2>
+                <h2><BarChart3 size={19} /> {t('reports.overviewHeading')}</h2>
                 <div className="reports-detail-grid">
-                  <p>Sales transactions <strong>{summary?.salesCount ?? 0}</strong></p>
-                  <p>Payments collected <strong>{money(summary?.paymentsCollectedMinor)}</strong></p>
-                  <p>Active products <strong>{summary?.totalProducts ?? 0}</strong></p>
-                  <p>Low-stock products <strong>{summary?.lowStockProducts ?? 0}</strong></p>
-                  <p>Outstanding sales <strong>{summary?.outstandingSaleCount ?? 0}</strong></p>
+                  <p>{t('reports.salesTransactions')} <strong>{summary?.salesCount ?? 0}</strong></p>
+                  <p>{t('reports.paymentsCollected')} <strong>{money(summary?.paymentsCollectedMinor)}</strong></p>
+                  <p>{t('reports.activeProducts')} <strong>{summary?.totalProducts ?? 0}</strong></p>
+                  <p>{t('reports.lowStockProducts')} <strong>{summary?.lowStockProducts ?? 0}</strong></p>
+                  <p>{t('reports.outstandingSales')} <strong>{summary?.outstandingSaleCount ?? 0}</strong></p>
                 </div>
               </div>
             </>
@@ -193,28 +201,34 @@ export default function ReportsPage({ token }) {
 
           {activeTab === 'Sales' && (
             <div className="reports-panel">
-              <h2>Sales report</h2>
+              <h2>{t('reports.salesReportHeading')}</h2>
               <div className="reports-detail-grid">
-                <p>Total sales <strong>{money(sales?.totalSalesMinor)}</strong></p>
-                <p>Sales transactions <strong>{sales?.salesCount ?? 0}</strong></p>
-                <p>Cost of goods sold <strong>{money(sales?.costOfGoodsSoldMinor)}</strong></p>
-                <p>Gross profit <strong>{money(sales?.grossProfitMinor)}</strong></p>
-                <p>Payments collected <strong>{money(sales?.paymentsCollectedMinor)}</strong></p>
-                <p>Net collections after refunds <strong>{money(sales?.netCollectionsMinor)}</strong></p>
-                <p>Refunds issued <strong>{money(sales?.refundsIssuedMinor)}</strong></p>
-                <p>Credit created during period <strong>{money(sales?.outstandingCreditForPeriodMinor)}</strong></p>
+                <p>{t('reports.mTotalSales')} <strong>{money(sales?.totalSalesMinor)}</strong></p>
+                <p>{t('reports.salesTransactions')} <strong>{sales?.salesCount ?? 0}</strong></p>
+                <p>{t('reports.costOfGoods')} <strong>{money(sales?.costOfGoodsSoldMinor)}</strong></p>
+                <p>{t('reports.grossProfit')} <strong>{money(sales?.grossProfitMinor)}</strong></p>
+                <p>{t('reports.paymentsCollected')} <strong>{money(sales?.paymentsCollectedMinor)}</strong></p>
+                <p>{t('reports.netCollections')} <strong>{money(sales?.netCollectionsMinor)}</strong></p>
+                <p>{t('reports.refundsIssued')} <strong>{money(sales?.refundsIssuedMinor)}</strong></p>
+                <p>{t('reports.creditCreated')} <strong>{money(sales?.outstandingCreditForPeriodMinor)}</strong></p>
               </div>
             </div>
           )}
 
           {activeTab === 'Expenses' && (
             <div className="reports-panel">
-              <h2>Expenses by category</h2>
-              <p className="reports-total">Total expenses: <strong>{money(expenses?.totalExpensesMinor)}</strong>
-                {' '}· {expenses?.expenseCount ?? 0} records</p>
+              <h2>{t('reports.expensesByCatHeading')}</h2>
+              <p className="reports-total">
+                {t('reports.totalExpenses', { amount: money(expenses?.totalExpensesMinor), count: expenses?.expenseCount ?? 0 })}
+              </p>
               {expenses?.byCategory?.length ? (
                 <div className="reports-table-wrap"><table className="reports-table">
-                  <thead><tr><th>Category</th><th>Records</th><th>Total</th><th>Share</th></tr></thead>
+                  <thead><tr>
+                    <th>{t('reports.thCategory')}</th>
+                    <th>{t('reports.thRecords')}</th>
+                    <th>{t('reports.thTotal')}</th>
+                    <th>{t('reports.thShare')}</th>
+                  </tr></thead>
                   <tbody>{expenses.byCategory.map((row) => {
                     const total = expenses.totalExpensesMinor || 0;
                     const share = total ? (row.totalMinor / total) * 100 : 0;
@@ -224,37 +238,41 @@ export default function ReportsPage({ token }) {
                     </tr>;
                   })}</tbody>
                 </table></div>
-              ) : <p className="reports-empty">No expenses found for this period.</p>}
+              ) : <p className="reports-empty">{t('reports.noExpenses')}</p>}
             </div>
           )}
 
           {activeTab === 'Profit' && (
             <div className="reports-panel">
-              <h2>Profit report</h2>
+              <h2>{t('reports.profitHeading')}</h2>
               <div className="reports-detail-grid">
-                <p>Total sales <strong>{money(profit?.totalSalesMinor)}</strong></p>
-                <p>Cost of goods sold <strong>{money(profit?.costOfGoodsSoldMinor)}</strong></p>
-                <p>Gross profit <strong>{money(profit?.grossProfitMinor)}</strong></p>
-                <p>Total expenses <strong>{money(profit?.totalExpensesMinor)}</strong></p>
-                <p>Net profit <strong>{money(profit?.netProfitMinor)}</strong></p>
-                <p>Refunds issued <strong>{money(profit?.refundsIssuedMinor)}</strong></p>
+                <p>{t('reports.totalSales')} <strong>{money(profit?.totalSalesMinor)}</strong></p>
+                <p>{t('reports.costOfGoods')} <strong>{money(profit?.costOfGoodsSoldMinor)}</strong></p>
+                <p>{t('reports.grossProfit')} <strong>{money(profit?.grossProfitMinor)}</strong></p>
+                <p>{t('reports.totalExpensesShort')} <strong>{money(profit?.totalExpensesMinor)}</strong></p>
+                <p>{t('reports.netProfit')} <strong>{money(profit?.netProfitMinor)}</strong></p>
+                <p>{t('reports.refundsIssued')} <strong>{money(profit?.refundsIssuedMinor)}</strong></p>
               </div>
-              <p className="reports-note">Net profit here is calculated by the backend as gross profit minus recorded expenses.</p>
+              <p className="reports-note">{t('reports.profitNote')}</p>
             </div>
           )}
 
           {activeTab === 'Stock' && (
             <div className="reports-panel">
-              <h2>Inventory health</h2>
+              <h2>{t('reports.inventoryHeading')}</h2>
               <div className="reports-detail-grid">
-                <p>Active products <strong>{stock?.totalProducts ?? 0}</strong></p>
-                <p>Low-stock products <strong>{stock?.lowStockProducts ?? 0}</strong></p>
-                <p>Inventory value at cost <strong>{money(stock?.inventoryValueMinor)}</strong></p>
+                <p>{t('reports.activeProducts')} <strong>{stock?.totalProducts ?? 0}</strong></p>
+                <p>{t('reports.lowStockProducts')} <strong>{stock?.lowStockProducts ?? 0}</strong></p>
+                <p>{t('reports.inventoryValue')} <strong>{money(stock?.inventoryValueMinor)}</strong></p>
               </div>
-              <h3>Low-stock items</h3>
+              <h3>{t('reports.lowStockItemsHeading')}</h3>
               {stock?.lowStockItems?.length ? (
                 <div className="reports-table-wrap"><table className="reports-table">
-                  <thead><tr><th>Product</th><th>Current stock</th><th>Minimum stock</th></tr></thead>
+                  <thead><tr>
+                    <th>{t('reports.thProduct')}</th>
+                    <th>{t('reports.thCurrentStock')}</th>
+                    <th>{t('reports.thMinimumStock')}</th>
+                  </tr></thead>
                   <tbody>{stock.lowStockItems.map((item) => (
                     <tr key={item._id || item.name}>
                       <td>{item.name}</td><td>{item.stockQuantity} {item.unit}</td>
@@ -262,12 +280,11 @@ export default function ReportsPage({ token }) {
                     </tr>
                   ))}</tbody>
                 </table></div>
-              ) : <p className="reports-empty">No low-stock items reported.</p>}
+              ) : <p className="reports-empty">{t('reports.noLowStock')}</p>}
             </div>
           )}
           <p className="reports-footnote">
-            Report period: {startDate || 'All dates'} to {endDate || 'All dates'}.
-            Stock is a current snapshot, not a historical stock balance.
+            {t('reports.footnote', { start: startDate || t('reports.allDates'), end: endDate || t('reports.allDates') })}
           </p>
         </>
       )}

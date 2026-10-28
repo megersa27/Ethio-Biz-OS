@@ -136,6 +136,14 @@
   background: #fff;
 }
 
+.auth-top-actions {
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
 .auth-form-card {
   width: 100%;
   max-width: 430px;

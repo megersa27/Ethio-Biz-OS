@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Activity,
   AlertTriangle,
@@ -37,38 +38,33 @@ import {
 import { useAuth } from './context/AuthContext.jsx';
 
 const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard },
-  { label: 'Sales', icon: ShoppingCart },
-  { label: 'Products', icon: Package },
-  { label: 'Inventory', icon: Boxes },
-  { label: 'Customers', icon: Users },
-  { label: 'Expenses', icon: CreditCard },
-  { label: 'Reports', icon: ClipboardList },
+  { id: 'Dashboard', labelKey: 'nav.dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'Sales', labelKey: 'nav.sales', label: 'Sales', icon: ShoppingCart },
+  { id: 'Products', labelKey: 'nav.products', label: 'Products', icon: Package },
+  { id: 'Inventory', labelKey: 'nav.inventory', label: 'Inventory', icon: Boxes },
+  { id: 'Customers', labelKey: 'nav.customers', label: 'Customers', icon: Users },
+  { id: 'Expenses', labelKey: 'nav.expenses', label: 'Expenses', icon: CreditCard },
+  { id: 'Reports', labelKey: 'nav.reports', label: 'Reports', icon: ClipboardList },
 ];
 
 function PlaceholderPage({ page, setActivePage }) {
-  const descriptions = {
-    Sales: 'Record sales, review transactions, and keep track of payments from your customers.',
-    Products: 'Organize your products, prices, and categories in one place.',
-    Inventory: 'Monitor stock levels and find products that need restocking.',
-    Customers: 'Manage customer details, purchase history, and outstanding credit.',
-    Expenses: 'Record business expenses and understand where your money goes.',
-    Reports: 'Review sales, expenses, profit, and business performance.',
-    Settings: 'Manage your business profile and workspace preferences.',
-    Help: 'Find guidance and support for using your business workspace.',
-  };
+  const { t } = useTranslation();
+  const pageKey = page.toLowerCase();
+  const description = t(`placeholder.${pageKey}`, {
+    defaultValue: t('placeholder.default'),
+  });
 
-  const PageIcon = navItems.find((item) => item.label === page)?.icon || Settings;
+  const PageIcon = navItems.find((item) => item.id === page || item.label === page)?.icon || Settings;
 
   return (
     <section className="panel section-placeholder">
       <div>
         <div className="placeholder-icon"><PageIcon size={28} /></div>
-        <h2>{page}</h2>
-        <p>{descriptions[page] || 'Manage your business in one convenient workspace.'}</p>
-        <p className="placeholder-note">This section is part of the frontend foundation. We will connect it to your existing backend in the next steps.</p>
+        <h2>{t(`nav.${pageKey}`, { defaultValue: page })}</h2>
+        <p>{description}</p>
+        <p className="placeholder-note">{t('placeholder.note')}</p>
         <button className="primary-button" onClick={() => setActivePage('Dashboard')}>
-          <LayoutDashboard size={16} /> Back to dashboard
+          <LayoutDashboard size={16} /> {t('common.backToDashboard')}
         </button>
       </div>
     </section>
@@ -101,6 +97,7 @@ function getDashboardPeriodFilters(period, now = new Date()) {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const [activePage, setActivePage] = useState('Dashboard');
   const [period, setPeriod] = useState('This week');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -208,7 +205,7 @@ export default function App() {
   if (authChecking) {
     return (
       <main className="auth-session-checking">
-        Checking your session...
+        {t('common.loading')}
       </main>
     );
   }
@@ -216,6 +213,27 @@ export default function App() {
   if (!auth) {
     return <AuthPage onLogin={login} />;
   }
+
+  const salesStatLabel =
+    period === 'Today'
+      ? t('dashboard.salesToday')
+      : period === 'This year'
+      ? t('dashboard.salesYear')
+      : t('dashboard.salesWeek');
+
+  const expensesStatLabel =
+    period === 'Today'
+      ? t('dashboard.expensesToday')
+      : period === 'This year'
+      ? t('dashboard.expensesYear')
+      : t('dashboard.expensesWeek');
+
+  const profitStatLabel =
+    period === 'Today'
+      ? t('dashboard.profitToday')
+      : period === 'This year'
+      ? t('dashboard.profitYear')
+      : t('dashboard.profitWeek');
 
   return (
     <div className="app-shell">
@@ -251,13 +269,13 @@ export default function App() {
             <>
               <div className="page-heading">
                 <div>
-                  <p className="eyebrow">BUSINESS AT A GLANCE</p>
-                  <h1>Welcome back, {auth.user?.name || 'there'} 👋</h1>
-                  <p>Here’s what’s happening with your business today.</p>
+                  <p className="eyebrow">{t('dashboard.eyebrow')}</p>
+                  <h1>{t('dashboard.welcome', { name: auth.user?.name || t('dashboard.welcomeThere') })}</h1>
+                  <p>{t('dashboard.today')}</p>
                 </div>
                 <div className="heading-actions">
                   <button className="secondary-button" onClick={() => window.print()}>
-                    <Download size={15} /> Export
+                    <Download size={15} /> {t('dashboard.export')}
                   </button>
                   <button
                     className="primary-button"
@@ -265,7 +283,7 @@ export default function App() {
                     disabled={dashboardLoading}
                   >
                     <RefreshCw size={16} />
-                    {dashboardLoading ? 'Refreshing…' : 'Refresh data'}
+                    {dashboardLoading ? t('common.refreshing') : t('dashboard.refreshData')}
                   </button>
                 </div>
               </div>
@@ -277,55 +295,55 @@ export default function App() {
                 <span>
                   <strong>
                     {dashboardError
-                      ? 'Could not load live data:'
+                      ? t('dashboard.dataErrorLabel')
                       : dashboardLoading
-                        ? 'Loading business data:'
-                        : 'Business data:'}
+                        ? t('dashboard.dataLoadingLabel')
+                        : t('dashboard.dataLabel')}
                   </strong>{' '}
                   {dashboardError ||
                     (dashboardLoading
-                      ? 'Fetching sales, expenses, credit and inventory.'
-                      : 'Sales, expenses and profit follow the selected period. Credit and stock alerts show current status; the chart uses recorded sales and expenses.')}
+                      ? t('dashboard.dataLoading')
+                      : t('dashboard.dataReady'))}
                 </span>
               </div>
 
               <div className="stats-grid">
                 <StatCard
-                  label={period === 'Today' ? "Today's sales" : period === 'This year' ? 'Sales this year' : 'Sales this week'}
+                  label={salesStatLabel}
                   value={dashboardLoading && !dashboardSummary
-                    ? 'Loading…'
+                    ? t('common.loading')
                     : formatMinor(dashboardSummary?.totalSalesMinor ?? 0)}
                   change=""
-                  note="from business records"
+                  note={t('dashboard.fromRecords')}
                   icon={Wallet}
                 />
                 <StatCard
-                  label={period === 'Today' ? "Today's expenses" : period === 'This year' ? 'Expenses this year' : 'Expenses this week'}
+                  label={expensesStatLabel}
                   value={dashboardLoading && !dashboardSummary
-                    ? 'Loading…'
+                    ? t('common.loading')
                     : formatMinor(dashboardSummary?.totalExpensesMinor ?? 0)}
                   change=""
-                  note="from business records"
+                  note={t('dashboard.fromRecords')}
                   icon={CreditCard}
                   color="orange"
                 />
                 <StatCard
-                  label={period === 'Today' ? "Today's net profit" : period === 'This year' ? 'Net profit this year' : 'Net profit this week'}
+                  label={profitStatLabel}
                   value={dashboardLoading && !dashboardSummary
-                    ? 'Loading…'
+                    ? t('common.loading')
                     : formatMinor(dashboardSummary?.netProfitMinor ?? 0)}
                   change=""
-                  note="sales profit minus expenses"
+                  note={t('dashboard.profitNote')}
                   icon={TrendingUp}
                   color="blue"
                 />
                 <StatCard
-                  label="Credit outstanding"
+                  label={t('dashboard.creditOutstanding')}
                   value={dashboardLoading && !dashboardSummary
-                    ? 'Loading…'
+                    ? t('common.loading')
                     : formatMinor(dashboardSummary?.outstandingCreditMinor ?? 0)}
                   change=""
-                  note={`${dashboardSummary?.outstandingSaleCount ?? 0} outstanding sales`}
+                  note={t('dashboard.outstandingSalesNote', { count: dashboardSummary?.outstandingSaleCount ?? 0 })}
                   icon={Users}
                   color="purple"
                 />
@@ -346,12 +364,12 @@ export default function App() {
 
               <RecentSales
                 sales={sales}
-                      loading={dashboardLoading}
+                loading={dashboardLoading}
                 setActivePage={setActivePage}
               />
 
               <div className="footer-note">
-                EthioBiz OS · Business insights made simple · Live business records
+                {t('dashboard.footer')}
               </div>
             </>
           ) : activePage === 'Sales' ? (
@@ -368,12 +386,12 @@ export default function App() {
             <>
               <div className="page-heading">
                 <div>
-                  <p className="eyebrow">YOUR BUSINESS WORKSPACE</p>
-                  <h1>Products</h1>
-                  <p>Manage product details, prices and reorder levels.</p>
+                  <p className="eyebrow">{t('products.eyebrow')}</p>
+                  <h1>{t('products.title')}</h1>
+                  <p>{t('products.lead')}</p>
                 </div>
                 <button className="secondary-button" onClick={() => setActivePage('Dashboard')}>
-                  <LayoutDashboard size={15} /> Dashboard
+                  <LayoutDashboard size={15} /> {t('common.dashboard')}
                 </button>
               </div>
               <ProductsPage token={auth.accessToken} />
@@ -384,12 +402,12 @@ export default function App() {
             <>
               <div className="page-heading">
                 <div>
-                  <p className="eyebrow">YOUR BUSINESS WORKSPACE</p>
-                  <h1>{activePage}</h1>
-                  <p>Everything you need to manage your business in one place.</p>
+                  <p className="eyebrow">{t('nav.workspace')}</p>
+                  <h1>{t(`nav.${activePage.toLowerCase()}`, { defaultValue: activePage })}</h1>
+                  <p>{t('placeholder.default')}</p>
                 </div>
                 <button className="secondary-button" onClick={() => setActivePage('Dashboard')}>
-                  <LayoutDashboard size={15} /> Dashboard
+                  <LayoutDashboard size={15} /> {t('common.dashboard')}
                 </button>
               </div>
               <PlaceholderPage page={activePage} setActivePage={setActivePage} />

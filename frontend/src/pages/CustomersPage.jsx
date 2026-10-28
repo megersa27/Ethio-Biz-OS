@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, CheckCircle2, Edit2, Mail, MapPin, Phone,
   Plus, RefreshCw, Search, UserRound, UserRoundX, X,
@@ -14,6 +15,7 @@ const emptyForm = {
 };
 
 export default function CustomersPage({ token }) {
+  const { t } = useTranslation();
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -34,14 +36,14 @@ export default function CustomersPage({ token }) {
         const result = await getCustomers(token);
         if (!cancelled) setCustomers(result.customers || []);
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Customers could not be loaded.');
+        if (!cancelled) setError(err.message || t('customers.errLoad'));
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     load();
     return () => { cancelled = true; };
-  }, [token, reload]);
+  }, [token, reload, t]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -92,7 +94,7 @@ export default function CustomersPage({ token }) {
     setNotice('');
 
     if (!form.name.trim()) {
-      setError('Customer name is required.');
+      setError(t('customers.errName'));
       return;
     }
 
@@ -108,10 +110,10 @@ export default function CustomersPage({ token }) {
     try {
       if (editing) {
         await updateCustomer(token, editing._id, payload);
-        setNotice('Customer details updated successfully.');
+        setNotice(t('customers.updated'));
       } else {
         await createCustomer(token, payload);
-        setNotice('Customer created successfully.');
+        setNotice(t('customers.created'));
       }
 
       setFormOpen(false);
@@ -119,7 +121,7 @@ export default function CustomersPage({ token }) {
       setForm({ ...emptyForm });
       setReload((value) => value + 1);
     } catch (err) {
-      setError(err.message || 'Customer could not be saved.');
+      setError(err.message || t('customers.errSave'));
     } finally {
       setSaving(false);
     }
@@ -127,17 +129,17 @@ export default function CustomersPage({ token }) {
 
   async function handleDeactivate(customer) {
     if (!window.confirm(
-      `Deactivate ${customer.name}? Historical sales records will be retained.`
+      t('customers.confirmDeactivate', { name: customer.name })
     )) return;
 
     setError('');
     setNotice('');
     try {
       await deactivateCustomer(token, customer._id);
-      setNotice(`${customer.name} has been deactivated.`);
+      setNotice(t('customers.deactivated', { name: customer.name }));
       setReload((value) => value + 1);
     } catch (err) {
-      setError(err.message || 'Customer could not be deactivated.');
+      setError(err.message || t('customers.errDeactivate'));
     }
   }
 
@@ -148,17 +150,17 @@ export default function CustomersPage({ token }) {
     <section className="customers-page">
       <div className="customers-heading">
         <div>
-          <p className="eyebrow">YOUR BUSINESS WORKSPACE</p>
-          <h1>Customers</h1>
-          <p>Manage customer contacts and keep customer records organised.</p>
+          <p className="eyebrow">{t('customers.eyebrow')}</p>
+          <h1>{t('customers.title')}</h1>
+          <p>{t('customers.lead')}</p>
         </div>
         <div className="customers-heading-actions">
           <button className="secondary-button" type="button"
             onClick={() => setReload((value) => value + 1)} disabled={loading}>
-            <RefreshCw size={16} /> {loading ? 'Loading…' : 'Refresh'}
+            <RefreshCw size={16} /> {loading ? t('common.loading') : t('common.refresh')}
           </button>
           <button className="primary-button" type="button" onClick={openCreate}>
-            <Plus size={16} /> Add customer
+            <Plus size={16} /> {t('customers.addCustomer')}
           </button>
         </div>
       </div>
@@ -171,68 +173,68 @@ export default function CustomersPage({ token }) {
       {notice && (
         <div className="customers-alert customers-alert-success" role="status">
           <CheckCircle2 size={18} /><span>{notice}</span>
-          <button type="button" onClick={() => setNotice('')} aria-label="Dismiss">
+          <button type="button" onClick={() => setNotice('')} aria-label={t('common.dismiss')}>
             <X size={16} />
           </button>
         </div>
       )}
 
       <div className="customers-summary">
-        <article><UserRound size={20} /><div><p>Active customers</p>
-          <strong>{loading ? '…' : customers.length}</strong></div></article>
-        <article><Phone size={20} /><div><p>With phone number</p>
-          <strong>{loading ? '…' : withPhone}</strong></div></article>
-        <article><Mail size={20} /><div><p>With email address</p>
-          <strong>{loading ? '…' : withEmail}</strong></div></article>
+        <article><UserRound size={20} /><div><p>{t('customers.activeCustomers')}</p>
+          <strong>{loading ? t('common.loadingEllipsis') : customers.length}</strong></div></article>
+        <article><Phone size={20} /><div><p>{t('customers.withPhone')}</p>
+          <strong>{loading ? t('common.loadingEllipsis') : withPhone}</strong></div></article>
+        <article><Mail size={20} /><div><p>{t('customers.withEmail')}</p>
+          <strong>{loading ? t('common.loadingEllipsis') : withEmail}</strong></div></article>
       </div>
 
       {formOpen && (
         <section className="customers-panel">
           <div className="customers-panel-heading">
             <div>
-              <h2>{editing ? 'Edit customer' : 'Add customer'}</h2>
-              <p>Name is required. Other contact information is optional.</p>
+              <h2>{editing ? t('customers.editCustomer') : t('customers.addCustomerTitle')}</h2>
+              <p>{t('customers.formLead')}</p>
             </div>
             <button className="customers-close" type="button"
-              onClick={closeForm} disabled={saving} aria-label="Close form">
+              onClick={closeForm} disabled={saving} aria-label={t('customers.closeFormAria')}>
               <X size={18} />
             </button>
           </div>
 
           <form className="customers-form" onSubmit={handleSubmit}>
             <div className="customers-form-grid">
-              <label>Customer name *
+              <label>{t('customers.customerNameLabel')}
                 <input name="name" value={form.name} onChange={handleChange}
                   maxLength={150} autoComplete="name" required disabled={saving}
-                  placeholder="e.g. Abebe Kebede" />
+                  placeholder={t('customers.customerNamePh')} />
               </label>
-              <label>Phone number
+              <label>{t('customers.phoneLabel')}
                 <input name="phone" type="tel" value={form.phone}
                   onChange={handleChange} maxLength={30} autoComplete="tel"
-                  disabled={saving} placeholder="+251…" />
+                  disabled={saving} placeholder={t('customers.phonePh')} />
               </label>
-              <label>Email address
+              <label>{t('customers.emailLabel')}
                 <input name="email" type="email" value={form.email}
                   onChange={handleChange} maxLength={254} autoComplete="email"
-                  disabled={saving} placeholder="customer@example.com" />
+                  disabled={saving} placeholder={t('customers.emailPh')} />
               </label>
-              <label>Address
+              <label>{t('customers.addressLabel')}
                 <input name="address" value={form.address} onChange={handleChange}
                   maxLength={300} autoComplete="street-address" disabled={saving}
-                  placeholder="Town, area or street" />
+                  placeholder={t('customers.addressPh')} />
               </label>
-              <label className="customers-notes-field">Notes
+              <label className="customers-notes-field">{t('customers.notesLabel')}
                 <textarea name="notes" value={form.notes} onChange={handleChange}
                   maxLength={500} rows={3} disabled={saving}
-                  placeholder="Optional customer notes" />
+                  placeholder={t('customers.notesPh')} />
               </label>
             </div>
 
             <div className="customers-form-actions">
               <button type="button" className="secondary-button"
-                onClick={closeForm} disabled={saving}>Cancel</button>
+                onClick={closeForm} disabled={saving}>{t('common.cancel')}</button>
               <button type="submit" className="primary-button" disabled={saving}>
-                {saving ? 'Saving…' : editing ? 'Save changes' : 'Create customer'}
+                {saving ? t('common.saving') : editing ? t('common.saveChanges') : t('customers.createCustomer')}
               </button>
             </div>
           </form>
@@ -241,32 +243,31 @@ export default function CustomersPage({ token }) {
 
       <section className="customers-panel">
         <div className="customers-directory-heading">
-          <div><h2>Customer directory</h2>
-            <p>{loading ? 'Loading…' : `${filtered.length} customer(s) shown`}</p>
+          <div><h2>{t('customers.directory')}</h2>
+            <p>{loading ? t('customers.loadingCustomers') : t('customers.shownCount', { count: filtered.length })}</p>
           </div>
           <label className="customers-search">
             <Search size={17} />
             <input type="search" value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search name, phone or email…" aria-label="Search customers" />
+              placeholder={t('customers.searchPh')} aria-label={t('customers.searchAria')} />
             {search && <button type="button" onClick={() => setSearch('')}
-              aria-label="Clear search"><X size={15} /></button>}
+              aria-label={t('customers.clearSearchAria')}><X size={15} /></button>}
           </label>
         </div>
 
         <div className="customers-table-wrap">
           <table className="customers-table">
             <thead><tr>
-              <th>Customer</th><th>Phone</th><th>Email</th>
-              <th>Address</th><th>Notes</th><th>Actions</th>
+              <th>{t('customers.thCustomer')}</th><th>{t('customers.thPhone')}</th><th>{t('customers.thEmail')}</th>
+              <th>{t('customers.thAddress')}</th><th>{t('customers.thNotes')}</th><th>{t('customers.thActions')}</th>
             </tr></thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="customers-empty">Loading customers…</td></tr>
+                <tr><td colSpan={6} className="customers-empty">{t('customers.loadingCustomers')}</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={6} className="customers-empty">
-                  {search ? 'No customers match your search.' :
-                    'No customers yet. Add your first customer to get started.'}
+                  {search ? t('customers.noMatch') : t('customers.none')}
                 </td></tr>
               ) : filtered.map((customer) => (
                 <tr key={customer._id}>
@@ -280,12 +281,12 @@ export default function CustomersPage({ token }) {
                   <td className="customers-notes-cell">{customer.notes || '—'}</td>
                   <td><div className="customers-actions">
                     <button type="button" onClick={() => openEdit(customer)}
-                      title="Edit customer" aria-label={`Edit ${customer.name}`}>
+                      title={t('customers.editTitle')} aria-label={t('customers.editTitle')}>
                       <Edit2 size={15} />
                     </button>
                     <button type="button" className="customers-deactivate"
                       onClick={() => handleDeactivate(customer)}
-                      title="Deactivate customer" aria-label={`Deactivate ${customer.name}`}>
+                      title={t('customers.deactivateTitle')} aria-label={t('customers.deactivateTitle')}>
                       <UserRoundX size={15} />
                     </button>
                   </div></td>

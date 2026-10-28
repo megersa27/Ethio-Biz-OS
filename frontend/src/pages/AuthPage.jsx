@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Activity,
   ArrowRight,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import { loginUser, registerBusiness } from '../services/api.js';
+import LanguageSwitcher from '../components/layout/LanguageSwitcher.jsx';
 import './AuthPage.css';
 
 const initialForm = {
@@ -20,6 +22,7 @@ const initialForm = {
 };
 
 export default function AuthPage({ onLogin }) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
@@ -48,12 +51,12 @@ export default function AuthPage({ onLogin }) {
 
     if (isRegister) {
       if (!form.email.trim() && !form.phone.trim()) {
-        setError('Please enter an email address or phone number.');
+        setError(t('auth.errEmailOrPhone'));
         return;
       }
 
       if (form.password.length < 12) {
-        setError('Your password must contain at least 12 characters.');
+        setError(t('auth.errPasswordLen'));
         return;
       }
     }
@@ -76,9 +79,7 @@ export default function AuthPage({ onLogin }) {
         }));
 
         setMode('login');
-        setSuccess(
-          'Your business account has been created. Please sign in.'
-        );
+        setSuccess(t('auth.successRegister'));
       } else {
         const result = await loginUser({
           identifier: form.identifier.trim(),
@@ -89,7 +90,7 @@ export default function AuthPage({ onLogin }) {
       }
     } catch (requestError) {
       setError(
-        requestError.message || 'Something went wrong. Please try again.'
+        requestError.message || t('auth.errGeneric')
       );
     } finally {
       setLoading(false);
@@ -102,6 +103,8 @@ export default function AuthPage({ onLogin }) {
     setSuccess('');
     setShowPassword(false);
   }
+
+  const currentYear = new Date().getFullYear();
 
   return (
     <main className="auth-shell">
@@ -118,18 +121,17 @@ export default function AuthPage({ onLogin }) {
 
         <div className="auth-story-content">
           <span className="auth-kicker">
-            BUSINESS MANAGEMENT, SIMPLIFIED
+            {t('auth.kicker')}
           </span>
 
           <h1>
-            Run your business.
+            {t('auth.headline1')}
             <br />
-            Understand your growth.
+            {t('auth.headline2')}
           </h1>
 
           <p>
-            Manage products, track sales, monitor inventory and
-            understand your business performance in one workspace.
+            {t('auth.lead')}
           </p>
 
           <div className="auth-benefit">
@@ -138,20 +140,24 @@ export default function AuthPage({ onLogin }) {
             </span>
 
             <div>
-              <strong>Your business, your workspace</strong>
+              <strong>{t('auth.benefitTitle')}</strong>
               <span>
-                Your account accesses its own business records.
+                {t('auth.benefitBody')}
               </span>
             </div>
           </div>
         </div>
 
         <p className="auth-story-footer">
-          Built for businesses in Ethiopia.
+          {t('auth.storyFooter')}
         </p>
       </section>
 
       <section className="auth-form-side">
+        <div className="auth-top-actions">
+          <LanguageSwitcher />
+        </div>
+
         <div className="auth-form-card">
           <div className="auth-mobile-brand">
             <Activity size={23} />
@@ -160,17 +166,17 @@ export default function AuthPage({ onLogin }) {
 
           <div className="auth-heading">
             <span className="auth-form-eyebrow">
-              YOUR BUSINESS WORKSPACE
+              {t('auth.formEyebrow')}
             </span>
 
             <h2>
-              {isRegister ? 'Create your account' : 'Welcome back'}
+              {isRegister ? t('auth.createTitle') : t('auth.welcomeTitle')}
             </h2>
 
             <p>
               {isRegister
-                ? 'Register your business to get started.'
-                : 'Sign in to continue to your business dashboard.'}
+                ? t('auth.createLead')
+                : t('auth.loginLead')}
             </p>
           </div>
 
@@ -180,7 +186,7 @@ export default function AuthPage({ onLogin }) {
               className={!isRegister ? 'selected' : ''}
               onClick={() => switchMode('login')}
             >
-              Sign in
+              {t('auth.signIn')}
             </button>
 
             <button
@@ -188,7 +194,7 @@ export default function AuthPage({ onLogin }) {
               className={isRegister ? 'selected' : ''}
               onClick={() => switchMode('register')}
             >
-              Create account
+              {t('auth.createAccount')}
             </button>
           </div>
 
@@ -208,13 +214,13 @@ export default function AuthPage({ onLogin }) {
             {isRegister ? (
               <>
                 <div className="auth-field">
-                  <label htmlFor="businessName">Business name</label>
+                  <label htmlFor="businessName">{t('auth.businessName')}</label>
                   <input
                     id="businessName"
                     name="businessName"
                     value={form.businessName}
                     onChange={updateField}
-                    placeholder="e.g. Abebe Mini Market"
+                    placeholder={t('auth.businessNamePh')}
                     maxLength={150}
                     autoComplete="organization"
                     required
@@ -222,13 +228,13 @@ export default function AuthPage({ onLogin }) {
                 </div>
 
                 <div className="auth-field">
-                  <label htmlFor="ownerName">Owner's full name</label>
+                  <label htmlFor="ownerName">{t('auth.ownerName')}</label>
                   <input
                     id="ownerName"
                     name="ownerName"
                     value={form.ownerName}
                     onChange={updateField}
-                    placeholder="Enter your full name"
+                    placeholder={t('auth.ownerNamePh')}
                     maxLength={100}
                     autoComplete="name"
                     required
@@ -237,7 +243,7 @@ export default function AuthPage({ onLogin }) {
 
                 <div className="auth-field">
                   <label htmlFor="email">
-                    Email address <span>(optional)</span>
+                    {t('auth.emailOptional')} <span>{t('auth.optional')}</span>
                   </label>
                   <input
                     id="email"
@@ -245,14 +251,14 @@ export default function AuthPage({ onLogin }) {
                     type="email"
                     value={form.email}
                     onChange={updateField}
-                    placeholder="you@example.com"
+                    placeholder={t('auth.emailPh')}
                     autoComplete="email"
                   />
                 </div>
 
                 <div className="auth-field">
                   <label htmlFor="phone">
-                    Phone number <span>(optional)</span>
+                    {t('auth.phoneOptional')} <span>{t('auth.optional')}</span>
                   </label>
                   <input
                     id="phone"
@@ -260,22 +266,22 @@ export default function AuthPage({ onLogin }) {
                     type="tel"
                     value={form.phone}
                     onChange={updateField}
-                    placeholder="+251 ..."
+                    placeholder={t('auth.phonePh')}
                     maxLength={30}
                     autoComplete="tel"
                   />
-                  <small>Enter an email address or phone number, at least one.</small>
+                  <small>{t('auth.emailOrPhoneHint')}</small>
                 </div>
               </>
             ) : (
               <div className="auth-field">
-                <label htmlFor="identifier">Email or phone number</label>
+                <label htmlFor="identifier">{t('auth.identifier')}</label>
                 <input
                   id="identifier"
                   name="identifier"
                   value={form.identifier}
                   onChange={updateField}
-                  placeholder="Enter your email or phone"
+                  placeholder={t('auth.identifierPh')}
                   autoComplete="username"
                   required
                 />
@@ -283,7 +289,7 @@ export default function AuthPage({ onLogin }) {
             )}
 
             <div className="auth-field">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">{t('auth.password')}</label>
 
               <div className="auth-password-wrap">
                 <input
@@ -294,8 +300,8 @@ export default function AuthPage({ onLogin }) {
                   onChange={updateField}
                   placeholder={
                     isRegister
-                      ? 'At least 12 characters'
-                      : 'Enter your password'
+                      ? t('auth.passwordCreatePh')
+                      : t('auth.passwordLoginPh')
                   }
                   minLength={isRegister ? 12 : undefined}
                   autoComplete={isRegister ? 'new-password' : 'current-password'}
@@ -306,14 +312,14 @@ export default function AuthPage({ onLogin }) {
                   type="button"
                   className="auth-password-toggle"
                   onClick={() => setShowPassword((visible) => !visible)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
 
               {isRegister && (
-                <small>Use at least 12 characters for your password.</small>
+                <small>{t('auth.passwordHint')}</small>
               )}
             </div>
 
@@ -324,10 +330,10 @@ export default function AuthPage({ onLogin }) {
             >
               <span>
                 {loading
-                  ? 'Please wait...'
+                  ? t('auth.submitWait')
                   : isRegister
-                    ? 'Create business account'
-                    : 'Sign in to EthioBiz'}
+                    ? t('auth.submitCreate')
+                    : t('auth.submitLogin')}
               </span>
 
               {!loading && <ArrowRight size={18} />}
@@ -335,12 +341,12 @@ export default function AuthPage({ onLogin }) {
           </form>
 
           <p className="auth-privacy-note">
-            Your business data is accessed through your authenticated account.
+            {t('auth.privacyNote')}
           </p>
         </div>
 
         <p className="auth-copyright">
-          © {new Date().getFullYear()} EthioBiz OS
+          {t('auth.copyright', { year: currentYear })}
         </p>
       </section>
     </main>

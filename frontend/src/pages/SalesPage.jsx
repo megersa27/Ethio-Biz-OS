@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -43,16 +44,16 @@ const formatDate = (value) => {
   });
 };
 
-function getPaymentLabel(sale) {
-  if (sale.saleStatus === 'CANCELLED') return 'Cancelled';
+function getPaymentLabel(sale, t) {
+  if (sale.saleStatus === 'CANCELLED') return t('sales.statusCancelled');
 
   switch (sale.paymentStatus) {
     case 'PAID':
-      return 'Paid';
+      return t('sales.statusPaid');
     case 'PARTIAL':
-      return 'Partially paid';
+      return t('sales.statusPartial');
     default:
-      return 'Unpaid';
+      return t('sales.statusUnpaid');
   }
 }
 
@@ -104,6 +105,7 @@ async function loadTodaysSales(token) {
 }
 
 export default function SalesPage({ token }) {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [sales, setSales] = useState([]);
@@ -172,7 +174,7 @@ export default function SalesPage({ token }) {
         );
       } catch (error) {
         if (!cancelled) {
-          setPageError(error.message || 'Sales data could not be loaded.');
+          setPageError(error.message || t('sales.errLoad'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -184,7 +186,7 @@ export default function SalesPage({ token }) {
     return () => {
       cancelled = true;
     };
-  }, [token, reloadKey]);
+  }, [token, reloadKey, t]);
 
   const totalAmountMinor = useMemo(
     () =>
@@ -279,15 +281,13 @@ export default function SalesPage({ token }) {
     setNotice('');
 
     if (!items.length || items.some((item) => !item.productId)) {
-      setFormError('Product hunda filadhu.');
+      setFormError(t('sales.errSelectProducts'));
       return;
     }
 
     const productIds = items.map((item) => item.productId);
     if (new Set(productIds).size !== productIds.length) {
-      setFormError(
-        'Product tokko sale tokko keessatti irra deddeebitee hin filatin. Quantity isaa sarara tokko keessatti walitti qabi.'
-      );
+      setFormError(t('sales.errDuplicate'));
       return;
     }
 
@@ -300,18 +300,18 @@ export default function SalesPage({ token }) {
       const quantity = Number(item.quantity);
 
       if (!product) {
-        setFormError('Product filatame hin argamne.');
+        setFormError(t('sales.errProductNotFound'));
         return;
       }
 
       if (!Number.isFinite(quantity) || quantity <= 0) {
-        setFormError('Quantity zeeroo caalu galchi.');
+        setFormError(t('sales.errQuantity'));
         return;
       }
 
       if (quantity > Number(product.stockQuantity || 0)) {
         setFormError(
-          `${product.name}: stock jiru (${product.stockQuantity}) caalaa gurguruu hin dandeessu.`
+          t('sales.errStock', { name: product.name, stock: product.stockQuantity })
         );
         return;
       }
@@ -321,7 +321,7 @@ export default function SalesPage({ token }) {
         !Number.isInteger(quantity)
       ) {
         setFormError(
-          `${product.name}: unit ${product.unit} waan ta'eef quantity guutuu (integer) galchi.`
+          t('sales.errIntegerUnit', { name: product.name, unit: product.unit })
         );
         return;
       }
@@ -339,26 +339,24 @@ export default function SalesPage({ token }) {
       paidEtb < 0 ||
       !Number.isFinite(moneyToMinor(paidEtb))
     ) {
-      setFormError('Amount paid sirrii galchi.');
+      setFormError(t('sales.errAmountPaid'));
       return;
     }
 
     const paidAmountMinor = moneyToMinor(paidEtb);
 
     if (paidAmountMinor > totalAmountMinor) {
-      setFormError('Kaffaltiin total sale caaluu hin qabu.');
+      setFormError(t('sales.errPaidExceeds'));
       return;
     }
 
     if (paidAmountMinor < totalAmountMinor && !customerId) {
-      setFormError(
-        'Sale keessatti liqiin yoo jiraate maamila filachuun dirqama.'
-      );
+      setFormError(t('sales.errCreditCustomer'));
       return;
     }
 
     if (notes.length > 500) {
-      setFormError('Notes 500 characters caaluu hin qabu.');
+      setFormError(t('sales.errNotesLen'));
       return;
     }
 
@@ -379,11 +377,11 @@ export default function SalesPage({ token }) {
 
     try {
       await createSale(token, saleData);
-      setNotice('Gurgurtaan milkaa’inaan galmaa’eera; stock ofumaan haaromfameera.');
+      setNotice(t('sales.saleSuccess'));
       resetSaleForm();
       setReloadKey((value) => value + 1);
     } catch (error) {
-      setFormError(error.message || 'Gurgurtaa galmeessuun hin milkoofne.');
+      setFormError(error.message || t('sales.errSaleFailed'));
     } finally {
       setSaving(false);
     }
@@ -412,12 +410,12 @@ export default function SalesPage({ token }) {
     const balanceMinor = Number(paymentSale.balanceDueMinor || 0);
 
     if (!Number.isFinite(paidEtb) || paidEtb <= 0 || amountMinor <= 0) {
-      setFormError('Kaffaltii zeeroo caalu galchi.');
+      setFormError(t('sales.errPaymentZero'));
       return;
     }
 
     if (amountMinor > balanceMinor) {
-      setFormError('Kaffaltiin balance hafee caaluu hin qabu.');
+      setFormError(t('sales.errPaymentExceeds'));
       return;
     }
 
@@ -430,11 +428,11 @@ export default function SalesPage({ token }) {
         reference: additionalReference.trim(),
       });
 
-      setNotice('Kaffaltiin dabalataa galmaa’eera.');
+      setNotice(t('sales.paymentSuccess'));
       setPaymentSale(null);
       setReloadKey((value) => value + 1);
     } catch (error) {
-      setFormError(error.message || 'Kaffaltii galmeessuun hin milkoofne.');
+      setFormError(error.message || t('sales.errPaymentFailed'));
     } finally {
       setSaving(false);
     }
@@ -442,14 +440,14 @@ export default function SalesPage({ token }) {
 
   const customerName = (sale) => {
     const rawId = sale.customerId?._id || sale.customerId;
-    if (!rawId) return 'Walk-in customer';
+    if (!rawId) return t('sales.walkInCustomer');
 
     return (
       customers.find(
         (customer) => String(customer._id) === String(rawId)
       )?.name ||
       sale.customerId?.name ||
-      'Customer'
+      t('sales.customerGeneric')
     );
   };
 
@@ -457,9 +455,9 @@ export default function SalesPage({ token }) {
     <section className="sales-page">
       <div className="sales-heading">
         <div>
-          <p className="eyebrow">YOUR BUSINESS WORKSPACE</p>
-          <h1>Sales Management</h1>
-          <p>Gurgurtaa galmeessi, kaffaltii hordofi, seenaa gurgurtaa ilaali.</p>
+          <p className="eyebrow">{t('sales.eyebrow')}</p>
+          <h1>{t('sales.title')}</h1>
+          <p>{t('sales.lead')}</p>
         </div>
         <button
           type="button"
@@ -468,7 +466,7 @@ export default function SalesPage({ token }) {
           disabled={loading}
         >
           <RefreshCw size={16} />
-          {loading ? 'Loading…' : 'Refresh'}
+          {loading ? t('common.loading') : t('common.refresh')}
         </button>
       </div>
 
@@ -490,31 +488,31 @@ export default function SalesPage({ token }) {
         <article className="sales-summary-card">
           <div className="sales-summary-icon"><ShoppingCart size={20} /></div>
           <div>
-            <p>Today's sales</p>
-            <strong>{loading ? '…' : todaySales.length}</strong>
-            <span>Latest {pagination?.limit ?? 20} records</span>
+            <p>{t('sales.todaysSales')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : todaySales.length}</strong>
+            <span>{t('sales.todaysSalesNote', { limit: pagination?.limit ?? 20 })}</span>
           </div>
         </article>
 
         <article className="sales-summary-card">
           <div className="sales-summary-icon"><Wallet size={20} /></div>
           <div>
-            <p>Collected from today's sales</p>
+            <p>{t('sales.collectedToday')}</p>
             <strong>
-              {loading ? '…' : formatMinor(totalCollectedOnPageMinor)}
+              {loading ? t('common.loadingEllipsis') : formatMinor(totalCollectedOnPageMinor)}
             </strong>
-            <span>Payments on sales created today</span>
+            <span>{t('sales.collectedNote')}</span>
           </div>
         </article>
 
         <article className="sales-summary-card">
           <div className="sales-summary-icon sales-summary-warning"><CircleDollarSign size={20} /></div>
           <div>
-            <p>Outstanding from today's sales</p>
+            <p>{t('sales.outstandingToday')}</p>
             <strong>
-              {loading ? '…' : formatMinor(totalOutstandingMinor)}
+              {loading ? t('common.loadingEllipsis') : formatMinor(totalOutstandingMinor)}
             </strong>
-            <span>Unpaid balances on sales created today</span>
+            <span>{t('sales.outstandingNote')}</span>
           </div>
         </article>
       </div>
@@ -523,8 +521,8 @@ export default function SalesPage({ token }) {
         <div className="sales-panel-heading">
           <div className="sales-panel-icon"><ShoppingCart size={19} /></div>
           <div>
-            <h2>Record a sale</h2>
-            <p>Select products and quantities. Prices are verified by the server.</p>
+            <h2>{t('sales.recordSale')}</h2>
+            <p>{t('sales.recordSaleLead')}</p>
           </div>
         </div>
 
@@ -532,21 +530,21 @@ export default function SalesPage({ token }) {
           <div className="sales-empty-products">
             <AlertTriangle size={19} />
             <div>
-              <strong>Active products hin jiran.</strong>
-              <p>Dura Products page irraa product fi gatii isaa galmeessi.</p>
+              <strong>{t('sales.noProductsTitle')}</strong>
+              <p>{t('sales.noProductsBody')}</p>
             </div>
           </div>
         ) : (
           <form className="sales-form" onSubmit={handleCreateSale}>
             <div className="sales-lines-heading">
-              <span>Product items</span>
+              <span>{t('sales.productItems')}</span>
               <button
                 type="button"
                 className="sales-add-line"
                 onClick={addItem}
                 disabled={saving || items.length >= products.length}
               >
-                <Plus size={15} /> Add product
+                <Plus size={15} /> {t('sales.addProduct')}
               </button>
             </div>
 
@@ -567,7 +565,7 @@ export default function SalesPage({ token }) {
                 return (
                   <div className="sales-line" key={index}>
                     <label className="sales-product-field">
-                      Product
+                      {t('sales.product')}
                       <select
                         value={item.productId}
                         onChange={(event) =>
@@ -576,7 +574,7 @@ export default function SalesPage({ token }) {
                         required
                         disabled={saving}
                       >
-                        <option value="">Select a product</option>
+                        <option value="">{t('sales.selectProduct')}</option>
                         {products.map((product) => {
                           const duplicate = items.some(
                             (other, otherIndex) =>
@@ -590,20 +588,20 @@ export default function SalesPage({ token }) {
                               value={product._id}
                               disabled={duplicate}
                             >
-                              {product.name} · Stock {product.stockQuantity} {product.unit}
+                              {product.name} · {t('products.thStock')} {product.stockQuantity} {product.unit}
                             </option>
                           );
                         })}
                       </select>
                       {selectedProduct && (
                         <span className="sales-field-help">
-                          Unit price: {formatMinor(selectedProduct.sellingPriceMinor)}
+                          {t('sales.unitPrice', { price: formatMinor(selectedProduct.sellingPriceMinor) })}
                         </span>
                       )}
                     </label>
 
                     <label className="sales-quantity-field">
-                      Quantity
+                      {t('sales.quantity')}
                       <input
                         type="number"
                         min={
@@ -628,7 +626,7 @@ export default function SalesPage({ token }) {
                     </label>
 
                     <div className="sales-line-total">
-                      <span>Line total</span>
+                      <span>{t('sales.lineTotal')}</span>
                       <strong>{formatMinor(lineTotal)}</strong>
                     </div>
 
@@ -637,8 +635,8 @@ export default function SalesPage({ token }) {
                       className="sales-remove-line"
                       onClick={() => removeItem(index)}
                       disabled={saving}
-                      aria-label={`Remove product line ${index + 1}`}
-                      title="Remove item"
+                      aria-label={t('sales.removeLineAria', { index: index + 1 })}
+                      title={t('sales.removeItem')}
                     >
                       <Trash2 size={17} />
                     </button>
@@ -649,24 +647,24 @@ export default function SalesPage({ token }) {
 
             <div className="sales-total-strip">
               <div>
-                <span>Sale total</span>
+                <span>{t('sales.saleTotal')}</span>
                 <strong>{formatMinor(totalAmountMinor)}</strong>
               </div>
               <div>
-                <span>Products selected</span>
+                <span>{t('sales.productsSelected')}</span>
                 <strong>{items.filter((item) => item.productId).length}</strong>
               </div>
             </div>
 
             <div className="sales-form-grid">
               <label>
-                Customer
+                {t('sales.customer')}
                 <select
                   value={customerId}
                   onChange={(event) => setCustomerId(event.target.value)}
                   disabled={saving}
                 >
-                  <option value="">Walk-in customer (no credit)</option>
+                  <option value="">{t('sales.walkIn')}</option>
                   {customers.map((customer) => (
                     <option key={customer._id} value={customer._id}>
                       {customer.name}
@@ -674,12 +672,12 @@ export default function SalesPage({ token }) {
                   ))}
                 </select>
                 <span className="sales-field-help">
-                  Customer is required if any balance remains unpaid.
+                  {t('sales.customerRequired')}
                 </span>
               </label>
 
               <label>
-                Amount paid (ETB)
+                {t('sales.amountPaid')}
                 <input
                   type="number"
                   min="0"
@@ -694,7 +692,7 @@ export default function SalesPage({ token }) {
               {Number(paidAmount) > 0 && (
                 <>
                   <label>
-                    Payment method
+                    {t('sales.paymentMethod')}
                     <select
                       value={paymentMethod}
                       onChange={(event) => setPaymentMethod(event.target.value)}
@@ -702,19 +700,19 @@ export default function SalesPage({ token }) {
                     >
                       {paymentMethods.map((method) => (
                         <option key={method.value} value={method.value}>
-                          {method.label}
+                          {t(`paymentMethods.${method.value}`)}
                         </option>
                       ))}
                     </select>
                   </label>
 
                   <label>
-                    Payment reference (optional)
+                    {t('sales.paymentReference')}
                     <input
                       value={paymentReference}
                       onChange={(event) => setPaymentReference(event.target.value)}
                       maxLength={120}
-                      placeholder="Transaction reference"
+                      placeholder={t('sales.referencePh')}
                       disabled={saving}
                     />
                   </label>
@@ -722,13 +720,13 @@ export default function SalesPage({ token }) {
               )}
 
               <label className="sales-notes-field">
-                Notes (optional)
+                {t('sales.notesOptional')}
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   maxLength={500}
                   rows={2}
-                  placeholder="Optional notes for this sale"
+                  placeholder={t('sales.notesPh')}
                   disabled={saving}
                 />
               </label>
@@ -736,7 +734,7 @@ export default function SalesPage({ token }) {
 
             <div className="sales-payment-preview">
               <div>
-                <span>Amount due</span>
+                <span>{t('sales.amountDue')}</span>
                 <strong>
                   {formatMinor(
                     Math.max(0, totalAmountMinor - moneyToMinor(Number(paidAmount) || 0))
@@ -744,7 +742,7 @@ export default function SalesPage({ token }) {
                 </strong>
               </div>
               <p>
-                Backend gatii dhugaa mirkaneessa, stock hir’isa, sale fi inventory history waliin galmeessa.
+                {t('sales.paymentPreview')}
               </p>
             </div>
 
@@ -756,13 +754,13 @@ export default function SalesPage({ token }) {
             )}
 
             <div className="sales-form-footer">
-              <span>Review the total and payment before recording.</span>
+              <span>{t('sales.reviewBefore')}</span>
               <button
                 className="primary-button"
                 type="submit"
                 disabled={saving || loading}
               >
-                {saving ? 'Saving…' : <><ShoppingCart size={16} /> Record sale</>}
+                {saving ? t('common.saving') : <><ShoppingCart size={16} /> {t('sales.recordSaleBtn')}</>}
               </button>
             </div>
           </form>
@@ -774,9 +772,9 @@ export default function SalesPage({ token }) {
           <div className="sales-panel-heading">
             <div className="sales-panel-icon"><Wallet size={19} /></div>
             <div>
-              <h2>Record additional payment</h2>
+              <h2>{t('sales.recordPayment')}</h2>
               <p>
-                Sale balance: {formatMinor(paymentSale.balanceDueMinor)}
+                {t('sales.saleBalance', { amount: formatMinor(paymentSale.balanceDueMinor) })}
               </p>
             </div>
           </div>
@@ -784,7 +782,7 @@ export default function SalesPage({ token }) {
           <form className="sales-form" onSubmit={handleAdditionalPayment}>
             <div className="sales-form-grid">
               <label>
-                Amount received (ETB)
+                {t('sales.amountReceived')}
                 <input
                   type="number"
                   min="0.01"
@@ -797,7 +795,7 @@ export default function SalesPage({ token }) {
               </label>
 
               <label>
-                Payment method
+                {t('sales.paymentMethod')}
                 <select
                   value={additionalPaymentMethod}
                   onChange={(event) => setAdditionalPaymentMethod(event.target.value)}
@@ -805,19 +803,19 @@ export default function SalesPage({ token }) {
                 >
                   {paymentMethods.map((method) => (
                     <option key={method.value} value={method.value}>
-                      {method.label}
+                      {t(`paymentMethods.${method.value}`)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="sales-notes-field">
-                Reference (optional)
+                {t('sales.referenceOptional')}
                 <input
                   value={additionalReference}
                   onChange={(event) => setAdditionalReference(event.target.value)}
                   maxLength={120}
-                  placeholder="Transaction reference"
+                  placeholder={t('sales.referencePh')}
                   disabled={saving}
                 />
               </label>
@@ -840,10 +838,10 @@ export default function SalesPage({ token }) {
                 }}
                 disabled={saving}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button className="primary-button" type="submit" disabled={saving}>
-                {saving ? 'Saving…' : 'Record payment'}
+                {saving ? t('common.saving') : t('sales.recordPaymentBtn')}
               </button>
             </div>
           </form>
@@ -854,11 +852,11 @@ export default function SalesPage({ token }) {
         <div className="sales-panel-heading">
           <div className="sales-panel-icon"><History size={19} /></div>
           <div>
-            <h2>Sales history</h2>
+            <h2>{t('sales.salesHistory')}</h2>
             <p>
               {pagination
-                ? `${pagination.totalItems} sales in total · Latest ${sales.length} shown`
-                : 'Recent sales and payment status'}
+                ? t('sales.historySummary', { total: pagination.totalItems, shown: sales.length })
+                : t('sales.historyDefault')}
             </p>
           </div>
         </div>
@@ -867,15 +865,15 @@ export default function SalesPage({ token }) {
           <table className="sales-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Sale ID</th>
-                <th>Customer</th>
-                <th>Items</th>
-                <th>Total</th>
-                <th>Paid</th>
-                <th>Balance</th>
-                <th>Status</th>
-                <th>Action</th>
+                <th>{t('sales.thDate')}</th>
+                <th>{t('sales.thSaleId')}</th>
+                <th>{t('sales.thCustomer')}</th>
+                <th>{t('sales.thItems')}</th>
+                <th>{t('sales.thTotal')}</th>
+                <th>{t('sales.thPaid')}</th>
+                <th>{t('sales.thBalance')}</th>
+                <th>{t('sales.thStatus')}</th>
+                <th>{t('sales.thAction')}</th>
               </tr>
             </thead>
 
@@ -883,13 +881,13 @@ export default function SalesPage({ token }) {
               {loading ? (
                 <tr>
                   <td colSpan={9} className="sales-table-empty">
-                    Loading sales…
+                    {t('sales.loadingSales')}
                   </td>
                 </tr>
               ) : sales.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="sales-table-empty">
-                    No sales recorded yet. Use the form above to record the first sale.
+                    {t('sales.noSales')}
                   </td>
                 </tr>
               ) : (
@@ -910,7 +908,7 @@ export default function SalesPage({ token }) {
                     <td>{formatMinor(sale.balanceDueMinor)}</td>
                     <td>
                       <span className={`sales-status sales-status-${String(sale.saleStatus === 'CANCELLED' ? 'cancelled' : sale.paymentStatus || 'unpaid').toLowerCase()}`}>
-                        {getPaymentLabel(sale)}
+                        {getPaymentLabel(sale, t)}
                       </span>
                     </td>
                     <td>
@@ -922,7 +920,7 @@ export default function SalesPage({ token }) {
                             onClick={() => openPaymentForm(sale)}
                             disabled={saving}
                           >
-                            Add payment
+                            {t('sales.addPayment')}
                           </button>
                         )}
                     </td>
@@ -934,9 +932,9 @@ export default function SalesPage({ token }) {
         </div>
 
         <div className="sales-table-footer">
-          <span>Showing up to 20 recent sales.</span>
+          <span>{t('sales.showingRecent')}</span>
           {pagination?.totalPages > 1 && (
-            <span>Page {pagination.page} of {pagination.totalPages}</span>
+            <span>{t('common.pageOf', { page: pagination.page, total: pagination.totalPages })}</span>
           )}
         </div>
       </div>

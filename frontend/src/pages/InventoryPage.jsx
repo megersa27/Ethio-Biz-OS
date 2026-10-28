@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   History,
@@ -15,44 +16,6 @@ import {
 } from '../services/api.js';
 
 import './InventoryPage.css';
-
-const movementOptions = [
-  {
-    value: 'RECEIVED',
-    label: 'Receive stock',
-    description: 'Stock haaraa kuusaatti dabaluu.',
-  },
-  {
-    value: 'DAMAGED',
-    label: 'Damaged stock',
-    description: 'Meeshaa miidhame stock irraa hir’isuu.',
-  },
-  {
-    value: 'EXPIRED',
-    label: 'Expired stock',
-    description: 'Meeshaa yeroon isaa darbe stock irraa hir’isuu.',
-  },
-  {
-    value: 'ADJUSTMENT_INCREASE',
-    label: 'Stock adjustment — increase',
-    description: 'Lakkoofsa stock dabaluun sirreessuu.',
-  },
-  {
-    value: 'ADJUSTMENT_DECREASE',
-    label: 'Stock adjustment — decrease',
-    description: 'Lakkoofsa stock hir’isuun sirreessuu.',
-  },
-];
-
-const movementLabels = {
-  RECEIVED: 'Received',
-  DAMAGED: 'Damaged',
-  EXPIRED: 'Expired',
-  ADJUSTMENT_INCREASE: 'Adjustment +',
-  ADJUSTMENT_DECREASE: 'Adjustment −',
-  SALE: 'Sale',
-  SALE_CANCELLATION: 'Sale cancellation',
-};
 
 const increasesStock = (type) =>
   type === 'RECEIVED' || type === 'ADJUSTMENT_INCREASE';
@@ -76,6 +39,7 @@ function formatDate(value) {
 }
 
 export default function InventoryPage({ token }) {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [movements, setMovements] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -92,6 +56,47 @@ export default function InventoryPage({ token }) {
     quantity: '1',
     reason: '',
   });
+
+  const movementOptions = [
+    {
+      value: 'RECEIVED',
+      label: t('inventory.optReceiveLabel'),
+      description: t('inventory.optReceiveDesc'),
+    },
+    {
+      value: 'DAMAGED',
+      label: t('inventory.optDamagedLabel'),
+      description: t('inventory.optDamagedDesc'),
+    },
+    {
+      value: 'EXPIRED',
+      label: t('inventory.optExpiredLabel'),
+      description: t('inventory.optExpiredDesc'),
+    },
+    {
+      value: 'ADJUSTMENT_INCREASE',
+      label: t('inventory.optAdjustUpLabel'),
+      description: t('inventory.optAdjustUpDesc'),
+    },
+    {
+      value: 'ADJUSTMENT_DECREASE',
+      label: t('inventory.optAdjustDownLabel'),
+      description: t('inventory.optAdjustDownDesc'),
+    },
+  ];
+
+  const getMovementLabel = (type) => {
+    switch (type) {
+      case 'RECEIVED': return t('inventory.movementReceived');
+      case 'DAMAGED': return t('inventory.movementDamaged');
+      case 'EXPIRED': return t('inventory.movementExpired');
+      case 'ADJUSTMENT_INCREASE': return t('inventory.movementAdjustmentIncrease');
+      case 'ADJUSTMENT_DECREASE': return t('inventory.movementAdjustmentDecrease');
+      case 'SALE': return t('inventory.movementSale');
+      case 'SALE_CANCELLATION': return t('inventory.movementSaleCancellation');
+      default: return type;
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -127,7 +132,7 @@ export default function InventoryPage({ token }) {
         }));
       } catch (error) {
         if (!cancelled) {
-          setPageError(error.message || 'Inventory data loading failed.');
+          setPageError(error.message || t('inventory.errLoad'));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -139,7 +144,7 @@ export default function InventoryPage({ token }) {
     return () => {
       cancelled = true;
     };
-  }, [token, productFilter, reloadKey]);
+  }, [token, productFilter, reloadKey, t]);
 
   const totalUnits = products.reduce(
     (sum, product) => sum + Number(product.stockQuantity || 0),
@@ -165,17 +170,17 @@ export default function InventoryPage({ token }) {
     const quantity = Number(form.quantity);
 
     if (!form.productId) {
-      setFormError('Dura product filadhu.');
+      setFormError(t('inventory.errProduct'));
       return;
     }
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
-      setFormError('Quantity lakkoofsa zeeroo caalu galchi.');
+      setFormError(t('inventory.errQuantity'));
       return;
     }
 
     if (!form.reason.trim()) {
-      setFormError('Sababaa sochii stock galchi.');
+      setFormError(t('inventory.errReason'));
       return;
     }
 
@@ -189,7 +194,7 @@ export default function InventoryPage({ token }) {
         reason: form.reason.trim(),
       });
 
-      setNotice('Inventory movement milkaa’inaan galmaa’eera.');
+      setNotice(t('inventory.movementSuccess'));
       setForm((current) => ({
         ...current,
         quantity: '1',
@@ -197,7 +202,7 @@ export default function InventoryPage({ token }) {
       }));
       setReloadKey((value) => value + 1);
     } catch (error) {
-      setFormError(error.message || 'Stock movement galmeessuun hin milkoofne.');
+      setFormError(error.message || t('inventory.errMovementFailed'));
     } finally {
       setSaving(false);
     }
@@ -207,9 +212,9 @@ export default function InventoryPage({ token }) {
     <section className="inventory-page">
       <div className="inventory-heading">
         <div>
-          <p className="eyebrow">STOCK CONTROL</p>
-          <h1>Inventory Management</h1>
-          <p>Stock dabaluu, hir’isuu fi sochiiwwan isaa hordofuu.</p>
+          <p className="eyebrow">{t('inventory.eyebrow')}</p>
+          <h1>{t('inventory.title')}</h1>
+          <p>{t('inventory.lead')}</p>
         </div>
 
         <button
@@ -219,7 +224,7 @@ export default function InventoryPage({ token }) {
           disabled={loading}
         >
           <RefreshCw size={16} />
-          {loading ? 'Loading…' : 'Refresh'}
+          {loading ? t('common.loading') : t('common.refresh')}
         </button>
       </div>
 
@@ -236,8 +241,8 @@ export default function InventoryPage({ token }) {
             <Package size={20} />
           </div>
           <div>
-            <p>Active products</p>
-            <strong>{loading ? '…' : products.length}</strong>
+            <p>{t('inventory.activeProducts')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : products.length}</strong>
           </div>
         </article>
 
@@ -246,8 +251,8 @@ export default function InventoryPage({ token }) {
             <PackagePlus size={20} />
           </div>
           <div>
-            <p>Total stock units</p>
-            <strong>{loading ? '…' : formatQuantity(totalUnits)}</strong>
+            <p>{t('inventory.totalUnits')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : formatQuantity(totalUnits)}</strong>
           </div>
         </article>
 
@@ -256,8 +261,8 @@ export default function InventoryPage({ token }) {
             <AlertTriangle size={20} />
           </div>
           <div>
-            <p>At / below minimum</p>
-            <strong>{loading ? '…' : lowStockCount}</strong>
+            <p>{t('inventory.atMinimum')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : lowStockCount}</strong>
           </div>
         </article>
       </div>
@@ -268,14 +273,14 @@ export default function InventoryPage({ token }) {
             <PackagePlus size={19} />
           </div>
           <div>
-            <h2>Record stock movement</h2>
-            <p>Sochii stock hundumaaf quantity fi sababaa galchi.</p>
+            <h2>{t('inventory.recordMovement')}</h2>
+            <p>{t('inventory.recordLead')}</p>
           </div>
         </div>
 
         <form className="inventory-form" onSubmit={handleSubmit}>
           <label>
-            Product
+            {t('inventory.product')}
             <select
               name="productId"
               value={form.productId}
@@ -284,19 +289,22 @@ export default function InventoryPage({ token }) {
               disabled={loading || products.length === 0 || saving}
             >
               {products.length === 0 && (
-                <option value="">No active products available</option>
+                <option value="">{t('inventory.noProductsOption')}</option>
               )}
               {products.map((product) => (
                 <option key={product._id} value={product._id}>
-                  {product.name} — {formatQuantity(product.stockQuantity)}{' '}
-                  {product.unit || 'piece'} in stock
+                  {t('inventory.productOption', {
+                    name: product.name,
+                    stock: formatQuantity(product.stockQuantity),
+                    unit: product.unit || 'piece',
+                  })}
                 </option>
               ))}
             </select>
           </label>
 
           <label>
-            Movement type
+            {t('inventory.movementType')}
             <select
               name="movementType"
               value={form.movementType}
@@ -318,7 +326,7 @@ export default function InventoryPage({ token }) {
 
           <div className="inventory-form-grid">
             <label>
-              Quantity
+              {t('inventory.quantity')}
               <input
                 type="number"
                 name="quantity"
@@ -328,12 +336,12 @@ export default function InventoryPage({ token }) {
                 step="any"
                 required
                 disabled={saving}
-                placeholder="e.g. 10"
+                placeholder={t('inventory.quantityPh')}
               />
             </label>
 
             <label>
-              Reason
+              {t('inventory.reason')}
               <input
                 type="text"
                 name="reason"
@@ -342,7 +350,7 @@ export default function InventoryPage({ token }) {
                 maxLength={500}
                 required
                 disabled={saving}
-                placeholder="e.g. New supplier delivery"
+                placeholder={t('inventory.reasonPh')}
               />
             </label>
           </div>
@@ -362,7 +370,7 @@ export default function InventoryPage({ token }) {
 
           <div className="inventory-form-footer">
             <p>
-              Stock will be updated and the movement saved to history together.
+              {t('inventory.footerNote')}
             </p>
             <button
               type="submit"
@@ -370,11 +378,11 @@ export default function InventoryPage({ token }) {
               disabled={saving || loading || products.length === 0}
             >
               {saving ? (
-                'Saving…'
+                t('common.saving')
               ) : increasesStock(form.movementType) ? (
-                <><PackagePlus size={16} /> Record movement</>
+                <><PackagePlus size={16} /> {t('inventory.recordMovementBtn')}</>
               ) : (
-                <><PackageMinus size={16} /> Record movement</>
+                <><PackageMinus size={16} /> {t('inventory.recordMovementBtn')}</>
               )}
             </button>
           </div>
@@ -387,20 +395,20 @@ export default function InventoryPage({ token }) {
             <History size={19} />
           </div>
           <div>
-            <h2>Movement history</h2>
+            <h2>{t('inventory.movementHistory')}</h2>
             <p>
               {pagination
-                ? `${pagination.total} recorded movements`
-                : 'Recent stock movements'}
+                ? t('inventory.historyCount', { count: pagination.total })
+                : t('inventory.historyDefault')}
             </p>
           </div>
           <label className="inventory-filter">
-            <span>Filter product</span>
+            <span>{t('inventory.filterProduct')}</span>
             <select
               value={productFilter}
               onChange={(event) => setProductFilter(event.target.value)}
             >
-              <option value="">All products</option>
+              <option value="">{t('inventory.allProducts')}</option>
               {products.map((product) => (
                 <option key={product._id} value={product._id}>
                   {product.name}
@@ -414,26 +422,26 @@ export default function InventoryPage({ token }) {
           <table className="inventory-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Product</th>
-                <th>Movement</th>
-                <th>Quantity</th>
-                <th>Stock before</th>
-                <th>Stock after</th>
-                <th>Reason</th>
+                <th>{t('inventory.thDate')}</th>
+                <th>{t('inventory.thProduct')}</th>
+                <th>{t('inventory.thMovement')}</th>
+                <th>{t('inventory.thQuantity')}</th>
+                <th>{t('inventory.thStockBefore')}</th>
+                <th>{t('inventory.thStockAfter')}</th>
+                <th>{t('inventory.thReason')}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={7} className="inventory-empty">
-                    Loading movements…
+                    {t('inventory.loadingMovements')}
                   </td>
                 </tr>
               ) : movements.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="inventory-empty">
-                    No stock movements found. Record a movement above to begin.
+                    {t('inventory.noMovements')}
                   </td>
                 </tr>
               ) : (
@@ -461,7 +469,7 @@ export default function InventoryPage({ token }) {
                             positive ? 'inventory-type-positive' : 'inventory-type-negative'
                           }`}
                         >
-                          {movementLabels[type] || type}
+                          {getMovementLabel(type)}
                         </span>
                       </td>
                       <td>
@@ -483,10 +491,10 @@ export default function InventoryPage({ token }) {
         </div>
 
         <div className="inventory-table-footer">
-          <span>Showing up to 20 movements at a time.</span>
+          <span>{t('inventory.showingMovements')}</span>
           {pagination?.totalPages > 1 && (
             <span>
-              Page {pagination.page} of {pagination.totalPages}
+              {t('common.pageOf', { page: pagination.page, total: pagination.totalPages })}
             </span>
           )}
         </div>

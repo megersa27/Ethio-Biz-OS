@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowDownRight,
   ArrowRight,
@@ -166,6 +167,7 @@ async function fetchAllReportRows(loader, token, filters, key) {
 }
 
 function SalesChart({ period, setPeriod, token }) {
+  const { t } = useTranslation();
   const [chartData, setChartData] = useState([]);
   const [periodSalesMinor, setPeriodSalesMinor] = useState(0);
   const [periodExpensesMinor, setPeriodExpensesMinor] = useState(0);
@@ -242,43 +244,50 @@ function SalesChart({ period, setPeriod, token }) {
     return () => { cancelled = true; };
   }, [period, token]);
 
+  const periodLabel =
+    period === 'Today'
+      ? t('dashboard.periodToday')
+      : period === 'This year'
+      ? t('dashboard.periodYear')
+      : t('dashboard.periodWeek');
+
   return (
     <section className="panel chart-panel">
       <div className="panel-header">
         <div>
-          <h2 className="panel-title">Sales overview</h2>
-          <p className="panel-subtitle">Sales and recorded expenses for the selected period</p>
+          <h2 className="panel-title">{t('chart.title')}</h2>
+          <p className="panel-subtitle">{t('chart.subtitle')}</p>
         </div>
 
         <select
           className="select-control"
           value={period}
           onChange={(event) => setPeriod(event.target.value)}
-          aria-label="Sales chart period"
+          aria-label={t('chart.ariaPeriod')}
         >
-          <option>This week</option>
-          <option>Today</option>
-          <option>This year</option>
+          <option value="This week">{t('dashboard.periodWeek')}</option>
+          <option value="Today">{t('dashboard.periodToday')}</option>
+          <option value="This year">{t('dashboard.periodYear')}</option>
         </select>
       </div>
 
       <div className="chart-summary">
         <div>
-          <span className="chart-summary-label">Sales in selected period</span>
-          <strong>{loading ? 'Loading…' : formatMinor(periodSalesMinor)}</strong>
+          <span className="chart-summary-label">{t('chart.salesInPeriod')}</span>
+          <strong>{loading ? t('common.loading') : formatMinor(periodSalesMinor)}</strong>
         </div>
         <span className="chart-period-summary">
-          {period} · {loading ? 'updating' : 'business records'}
+          {periodLabel} · {loading ? t('chart.updating') : t('chart.businessRecords')}
         </span>
       </div>
 
       <div className="chart-wrap">
         {loading ? (
-          <p className="chart-message">Loading actual sales and expense records…</p>
+          <p className="chart-message">{t('chart.loadingMsg')}</p>
         ) : error ? (
           <p className="chart-message chart-message-error">{error}</p>
         ) : !hasRecords ? (
-          <p className="chart-message">No sales or expense records for this period yet.</p>
+          <p className="chart-message">{t('chart.noRecords')}</p>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 10, right: 4, left: -18, bottom: 0 }}>
@@ -318,7 +327,7 @@ function SalesChart({ period, setPeriod, token }) {
               <Area
                 type="monotone"
                 dataKey="sales"
-                name="Sales"
+                name={t('chart.legendSales')}
                 stroke="#176b4d"
                 strokeWidth={2.5}
                 fill="url(#salesFill)"
@@ -327,7 +336,7 @@ function SalesChart({ period, setPeriod, token }) {
               <Area
                 type="monotone"
                 dataKey="expenses"
-                name="Expenses"
+                name={t('chart.legendExpenses')}
                 stroke="#a8d7bc"
                 strokeWidth={2}
                 fill="url(#expensesFill)"
@@ -338,27 +347,27 @@ function SalesChart({ period, setPeriod, token }) {
       </div>
 
       <div className="chart-legend">
-        <span className="legend-item"><span className="legend-dot" /> Sales</span>
-        <span className="legend-item"><span className="legend-dotlight" /> Expenses</span>
+        <span className="legend-item"><span className="legend-dot" /> {t('chart.legendSales')}</span>
+        <span className="legend-item"><span className="legend-dotlight" /> {t('chart.legendExpenses')}</span>
         <span className="chart-expense-total">
-          Expenses: {loading ? 'Loading…' : formatMinor(periodExpensesMinor)}
+          {t('chart.expensesLabel', { amount: loading ? t('common.loading') : formatMinor(periodExpensesMinor) })}
         </span>
       </div>
     </section>
   );
 }
 
-
 function StockAlerts({ items, setActivePage, loading }) {
+  const { t } = useTranslation();
   return (
     <section className="panel stock-panel">
       <div className="panel-header">
         <div>
-          <h2 className="panel-title">Low stock alerts</h2>
-          <p className="panel-subtitle">Products that need attention</p>
+          <h2 className="panel-title">{t('stockAlerts.title')}</h2>
+          <p className="panel-subtitle">{t('stockAlerts.subtitle')}</p>
         </div>
         <span className="alert-count">
-          {loading ? '…' : items.length}
+          {loading ? t('common.loadingEllipsis') : items.length}
         </span>
       </div>
 
@@ -378,18 +387,18 @@ function StockAlerts({ items, setActivePage, loading }) {
 
         {!loading && items.length === 0 && (
           <p className="empty-state">
-            No low-stock products found.
+            {t('stockAlerts.empty')}
           </p>
         )}
 
         {loading && (
-          <p className="empty-state">Loading inventory…</p>
+          <p className="empty-state">{t('stockAlerts.loadingInv')}</p>
         )}
       </div>
 
       <div className="panel-footer">
         <button className="text-link" onClick={() => setActivePage('Inventory')}>
-          View inventory <ArrowRight size={14} />
+          {t('stockAlerts.viewInventory')} <ArrowRight size={14} />
         </button>
       </div>
     </section>
@@ -397,6 +406,7 @@ function StockAlerts({ items, setActivePage, loading }) {
 }
 
 function RecentSales({ sales, search = '', setActivePage, loading }) {
+  const { t } = useTranslation();
   const filteredSales = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -409,17 +419,26 @@ function RecentSales({ sales, search = '', setActivePage, loading }) {
     );
   }, [sales, search]);
 
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'Paid': return t('sales.statusPaid');
+      case 'Partial': return t('sales.statusPartial');
+      case 'Cancelled': return t('sales.statusCancelled');
+      default: return t('sales.statusUnpaid');
+    }
+  };
+
   return (
     <section className="panel table-panel">
       <div className="panel-header">
         <div>
-          <h2 className="panel-title">Recent sales</h2>
+          <h2 className="panel-title">{t('recentSales.title')}</h2>
           <p className="panel-subtitle">
-            Your latest transactions from the backend
+            {t('recentSales.subtitle')}
           </p>
         </div>
         <button className="secondary-button" onClick={() => setActivePage('Sales')}>
-          View all <ArrowRight size={14} />
+          {t('recentSales.viewAll')} <ArrowRight size={14} />
         </button>
       </div>
 
@@ -427,11 +446,11 @@ function RecentSales({ sales, search = '', setActivePage, loading }) {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Sale ID</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Status</th>
+              <th>{t('recentSales.saleId')}</th>
+              <th>{t('recentSales.customer')}</th>
+              <th>{t('recentSales.date')}</th>
+              <th>{t('recentSales.amount')}</th>
+              <th>{t('recentSales.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -443,7 +462,7 @@ function RecentSales({ sales, search = '', setActivePage, loading }) {
                 <td><strong>{formatMinor(sale.amountMinor)}</strong></td>
                 <td>
                   <span className={`status ${sale.status.toLowerCase()}`}>
-                    {sale.status}
+                    {getStatusLabel(sale.status)}
                   </span>
                 </td>
               </tr>
@@ -453,10 +472,10 @@ function RecentSales({ sales, search = '', setActivePage, loading }) {
               <tr>
                 <td colSpan="5" className="empty-state">
                   {loading
-                    ? 'Loading sales…'
+                    ? t('recentSales.loadingSales')
                     : search
-                      ? 'No matching sales found.'
-                      : 'No sales recorded yet.'}
+                      ? t('recentSales.noMatch')
+                      : t('recentSales.noneRecorded')}
                 </td>
               </tr>
             )}
@@ -465,9 +484,9 @@ function RecentSales({ sales, search = '', setActivePage, loading }) {
       </div>
 
       <div className="table-bottom">
-        <p>Showing {filteredSales.length} of {sales.length} transactions</p>
+        <p>{t('recentSales.showingTx', { shown: filteredSales.length, total: sales.length })}</p>
         <button className="text-link" onClick={() => setActivePage('Reports')}>
-          Sales report <ArrowRight size={13} />
+          {t('recentSales.salesReport')} <ArrowRight size={13} />
         </button>
       </div>
     </section>
