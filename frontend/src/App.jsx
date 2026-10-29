@@ -26,6 +26,7 @@ import CustomersPage from './pages/CustomersPage.jsx';
 import ExpensesPage from './pages/ExpensesPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import HelpPage from './pages/HelpPage.jsx';
 import { StatCard, SalesChart, StockAlerts, RecentSales } from './components/dashboard/DashboardWidgets.jsx';
 import { formatMinor } from './utils/currency.js';
 import Sidebar from './components/layout/Sidebar.jsx';
@@ -46,6 +47,9 @@ const navItems = [
   { id: 'Expenses', labelKey: 'nav.expenses', label: 'Expenses', icon: CreditCard },
   { id: 'Reports', labelKey: 'nav.reports', label: 'Reports', icon: ClipboardList },
 ];
+
+const VALID_PAGES = ['Dashboard', 'Sales', 'Products', 'Inventory', 'Customers', 'Expenses', 'Reports', 'Settings', 'Help'];
+const ACTIVE_PAGE_STORAGE_KEY = 'ethioBiz.activePage';
 
 function PlaceholderPage({ page, setActivePage }) {
   const { t } = useTranslation();
@@ -98,7 +102,12 @@ function getDashboardPeriodFilters(period, now = new Date()) {
 
 export default function App() {
   const { t } = useTranslation();
-  const [activePage, setActivePage] = useState('Dashboard');
+  const [activePage, setActivePage] = useState(() => {
+    if (typeof window === 'undefined') return 'Dashboard';
+
+    const savedPage = window.localStorage.getItem(ACTIVE_PAGE_STORAGE_KEY);
+    return VALID_PAGES.includes(savedPage) ? savedPage : 'Dashboard';
+  });
   const [period, setPeriod] = useState('This week');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sales, setSales] = useState([]);
@@ -108,6 +117,12 @@ export default function App() {
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardRefresh, setDashboardRefresh] = useState(0);
   const { auth, authChecking, login, logout, updateProfile } = useAuth();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(ACTIVE_PAGE_STORAGE_KEY, activePage);
+    }
+  }, [activePage]);
 
   useEffect(() => {
     const token = auth?.accessToken;
@@ -398,6 +413,11 @@ export default function App() {
             </>
           ) : activePage === 'Inventory' ? (
             <InventoryPage token={auth.accessToken} />
+          ) : activePage === 'Help' ? (
+            <HelpPage
+              onGoToDashboard={() => setActivePage('Dashboard')}
+              onOpenSettings={() => setActivePage('Settings')}
+            />
           ) : (
             <>
               <div className="page-heading">

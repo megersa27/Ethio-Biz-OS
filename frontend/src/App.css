@@ -12,6 +12,7 @@
   display: flex;
   flex-direction: column;
   width: 248px;
+  height: 100vh;
   padding: 26px 16px 18px;
   background: #fff;
   border-right: 1px solid var(--border);
@@ -61,6 +62,7 @@
 
 .nav-list {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 5px;
 }
@@ -96,7 +98,8 @@
 }
 
 .sidebar-bottom {
-  margin-top: auto;
+  margin-top: 12px;
+  flex-shrink: 0;
 }
 
 .help-card {
@@ -123,6 +126,75 @@
   color: var(--green);
   font-size: 11px;
   font-weight: 700;
+}
+
+.help-page {
+  display: grid;
+  gap: 20px;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.help-panel,
+.help-card-panel {
+  padding: 22px;
+}
+
+.help-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: var(--green);
+}
+
+.help-panel-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.help-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.help-card-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.help-card-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: var(--green);
+  background: var(--green-light);
+  border-radius: 12px;
+}
+
+.help-card-panel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.help-card-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .profile-mini {

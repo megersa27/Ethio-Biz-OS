@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Activity, ArrowRight, CircleHelp, Settings } from 'lucide-react';
+import { Activity, ArrowRight, CircleHelp } from 'lucide-react';
 
 function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar, lowStockCount = 0 }) {
   const { t } = useTranslation();
@@ -38,20 +38,6 @@ function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar, lo
               </button>
             );
           })}
-        </nav>
-
-        <p className="nav-label nav-label-lower">{t('nav.preferences')}</p>
-        <nav className="nav-list">
-          <button
-            className={`nav-item ${activePage === 'Settings' ? 'active' : ''}`}
-            onClick={() => {
-              setActivePage('Settings');
-              closeSidebar();
-            }}
-          >
-            <Settings size={18} strokeWidth={1.9} />
-            <span>{t('nav.settings')}</span>
-          </button>
         </nav>
 
         <div className="sidebar-bottom">
