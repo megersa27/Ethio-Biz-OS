@@ -120,10 +120,14 @@ export default function SalesPage({ token }) {
   const [reloadKey, setReloadKey] = useState(0);
 
   const [items, setItems] = useState([
-    { productId: '', quantity: '1' },
+    { productId: '', productSearch: '', quantity: '' },
   ]);
+  const [openProductIndex, setOpenProductIndex] = useState(null);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
   const [customerId, setCustomerId] = useState('');
-  const [paidAmount, setPaidAmount] = useState('0');
+  const [paidAmount, setPaidAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('full');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentReference, setPaymentReference] = useState('');
   const [notes, setNotes] = useState('');
@@ -160,17 +164,25 @@ export default function SalesPage({ token }) {
         setPagination(salesResult.pagination || null);
 
         setItems((current) =>
-          current.map((item, index) => ({
-            ...item,
-            productId:
-              item.productId && productRows.some(
-                (product) => String(product._id) === item.productId
-              )
-                ? item.productId
-                : index === 0
-                  ? String(productRows[0]?._id || '')
-                  : item.productId,
-          }))
+          current.map((item) => {
+            const selectedProduct = productRows.find(
+              (product) => String(product._id) === item.productId
+            );
+
+            if (!selectedProduct) {
+              return {
+                ...item,
+                productId: '',
+                productSearch: '',
+                quantity: item.productId ? '' : item.quantity,
+              };
+            }
+
+            return {
+              ...item,
+              productSearch: selectedProduct.name,
+            };
+          })
         );
       } catch (error) {
         if (!cancelled) {
@@ -234,18 +246,25 @@ export default function SalesPage({ token }) {
     );
   }
 
-  function addItem() {
-    const used = new Set(items.map((item) => item.productId));
-    const nextProduct = products.find(
-      (product) => !used.has(String(product._id))
+  function chooseProduct(index, product) {
+    setItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              productId: String(product._id),
+              productSearch: product.name,
+              quantity: '',
+            }
+          : item
+      )
     );
-
+    setOpenProductIndex(null);
+  }
+  function addItem() {
     setItems((current) => [
       ...current,
-      {
-        productId: String(nextProduct?._id || ''),
-        quantity: '1',
-      },
+      { productId: '', productSearch: '', quantity: '' },
     ]);
   }
 
@@ -257,19 +276,20 @@ export default function SalesPage({ token }) {
 
       return remaining.length
         ? remaining
-        : [{ productId: '', quantity: '1' }];
+        : [{ productId: '', productSearch: '', quantity: '' }];
     });
   }
 
   function resetSaleForm() {
     setItems([
-      {
-        productId: String(products[0]?._id || ''),
-        quantity: '1',
-      },
+      { productId: '', productSearch: '', quantity: '' },
     ]);
     setCustomerId('');
-    setPaidAmount('0');
+    setCustomerSearch('');
+    setCustomerDropdownOpen(false);
+    setOpenProductIndex(null);
+    setPaymentMode('full');
+    setPaidAmount('');
     setPaymentMethod('cash');
     setPaymentReference('');
     setNotes('');
@@ -332,7 +352,11 @@ export default function SalesPage({ token }) {
       });
     }
 
-    const paidEtb = Number(paidAmount);
+    const paidEtb = paymentMode === 'partial'
+      ? Number(paidAmount)
+      : paymentMode === 'credit'
+        ? 0
+        : totalAmountMinor / 100;
 
     if (
       !Number.isFinite(paidEtb) ||
@@ -343,7 +367,11 @@ export default function SalesPage({ token }) {
       return;
     }
 
-    const paidAmountMinor = moneyToMinor(paidEtb);
+    const paidAmountMinor = paymentMode === 'partial'
+      ? moneyToMinor(paidEtb)
+      : paymentMode === 'credit'
+        ? 0
+        : totalAmountMinor;
 
     if (paidAmountMinor > totalAmountMinor) {
       setFormError(t('sales.errPaidExceeds'));
@@ -355,7 +383,7 @@ export default function SalesPage({ token }) {
       return;
     }
 
-    if (notes.length > 500) {
+    if (paymentMode !== 'full' && notes.length > 500) {
       setFormError(t('sales.errNotesLen'));
       return;
     }
@@ -363,7 +391,7 @@ export default function SalesPage({ token }) {
     const saleData = {
       items: requestedItems,
       paidAmountMinor,
-      notes: notes.trim(),
+      notes: paymentMode !== 'full' ? notes.trim() : '',
     };
 
     if (customerId) saleData.customerId = customerId;
@@ -490,7 +518,6 @@ export default function SalesPage({ token }) {
           <div>
             <p>{t('sales.todaysSales')}</p>
             <strong>{loading ? t('common.loadingEllipsis') : todaySales.length}</strong>
-            <span>{t('sales.todaysSalesNote', { limit: pagination?.limit ?? 20 })}</span>
           </div>
         </article>
 
@@ -501,7 +528,6 @@ export default function SalesPage({ token }) {
             <strong>
               {loading ? t('common.loadingEllipsis') : formatMinor(totalCollectedOnPageMinor)}
             </strong>
-            <span>{t('sales.collectedNote')}</span>
           </div>
         </article>
 
@@ -512,7 +538,6 @@ export default function SalesPage({ token }) {
             <strong>
               {loading ? t('common.loadingEllipsis') : formatMinor(totalOutstandingMinor)}
             </strong>
-            <span>{t('sales.outstandingNote')}</span>
           </div>
         </article>
       </div>
@@ -553,6 +578,26 @@ export default function SalesPage({ token }) {
                 const selectedProduct = products.find(
                   (product) => String(product._id) === item.productId
                 );
+                const searchValue = String(
+                  item.productSearch ?? selectedProduct?.name ?? ''
+                );
+                const searchTerm = searchValue.trim().toLocaleLowerCase();
+
+                const matchingProducts = products.filter((product) => {
+                  const alreadySelected = items.some(
+                    (other, otherIndex) =>
+                      otherIndex !== index &&
+                      other.productId === String(product._id)
+                  );
+                  const productName = String(product.name || '')
+                    .toLocaleLowerCase();
+
+                  return (
+                    !alreadySelected &&
+                    (!searchTerm || productName.includes(searchTerm))
+                  );
+                });
+
                 const quantity = Number(item.quantity);
                 const lineTotal = selectedProduct &&
                   Number.isFinite(quantity) &&
@@ -564,41 +609,67 @@ export default function SalesPage({ token }) {
 
                 return (
                   <div className="sales-line" key={index}>
-                    <label className="sales-product-field">
-                      {t('sales.product')}
-                      <select
-                        value={item.productId}
-                        onChange={(event) =>
-                          updateItem(index, 'productId', event.target.value)
-                        }
-                        required
-                        disabled={saving}
-                      >
-                        <option value="">{t('sales.selectProduct')}</option>
-                        {products.map((product) => {
-                          const duplicate = items.some(
-                            (other, otherIndex) =>
-                              otherIndex !== index &&
-                              other.productId === String(product._id)
-                          );
+                    <div className="sales-product-field">
+                      <label htmlFor={`sales-product-${index}`}>
+                        {t('sales.product')}
+                      </label>
 
-                          return (
-                            <option
-                              key={product._id}
-                              value={product._id}
-                              disabled={duplicate}
+                      <div className="sales-product-search">
+                        <input
+                          id={`sales-product-${index}`}
+                          type="text"
+                          value={item.productSearch ?? selectedProduct?.name ?? ''}
+                          onFocus={() => setOpenProductIndex(index)}
+                          onClick={() => setOpenProductIndex(index)}
+                          onBlur={(event) => {
+                            if (!event.currentTarget.parentElement?.contains(event.relatedTarget)) {
+                              setOpenProductIndex(null);
+                            }
+                          }}
+                          onChange={(event) => {
+                            updateItem(index, 'productSearch', event.target.value);
+                            updateItem(index, 'productId', '');
+                            setOpenProductIndex(index);
+                          }}
+                          placeholder={t('sales.selectProduct')}
+                          autoComplete="off"
+                          required
+                          disabled={saving}
+                        />
+
+                        {openProductIndex === index && matchingProducts.length > 0 && (
+                            <div
+                              className="sales-product-options"
+                              role="listbox"
                             >
-                              {product.name} · {t('products.thStock')} {product.stockQuantity} {product.unit}
-                            </option>
-                          );
-                        })}
-                      </select>
+                              {matchingProducts.map((product) => (
+                                <button
+                                  key={product._id}
+                                  type="button"
+                                  className="sales-product-option"
+                                  role="option"
+                                  aria-selected={false}
+                                  onClick={() => chooseProduct(index, product)}
+                                  disabled={saving}
+                                >
+                                  <span>{product.name}</span>
+                                  <small>
+                                    {t('products.thStock')} {product.stockQuantity} {product.unit}
+                                  </small>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                      </div>
+
                       {selectedProduct && (
                         <span className="sales-field-help">
-                          {t('sales.unitPrice', { price: formatMinor(selectedProduct.sellingPriceMinor) })}
+                          {t('sales.unitPrice', {
+                            price: formatMinor(selectedProduct.sellingPriceMinor),
+                          })}
                         </span>
                       )}
-                    </label>
+                    </div>
 
                     <label className="sales-quantity-field">
                       {t('sales.quantity')}
@@ -608,7 +679,7 @@ export default function SalesPage({ token }) {
                           selectedProduct &&
                           ['piece', 'box', 'pack'].includes(selectedProduct.unit)
                             ? '1'
-                            : '0.001'
+                            : undefined
                         }
                         step={
                           selectedProduct &&
@@ -657,25 +728,133 @@ export default function SalesPage({ token }) {
             </div>
 
             <div className="sales-form-grid">
-              <label>
-                {t('sales.customer')}
-                <select
-                  value={customerId}
-                  onChange={(event) => setCustomerId(event.target.value)}
-                  disabled={saving}
-                >
-                  <option value="">{t('sales.walkIn')}</option>
-                  {customers.map((customer) => (
-                    <option key={customer._id} value={customer._id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </select>
+            <div className="sales-payment-mode">
+              <label htmlFor="sales-payment-mode">
+                {t('sales.paymentType')}
+              </label>
+              <select
+                id="sales-payment-mode"
+                value={paymentMode}
+                onChange={(event) => {
+                  const mode = event.target.value;
+                  setPaymentMode(mode);
+                  setPaidAmount(
+                    mode === 'partial'
+                      ? (totalAmountMinor / 100).toFixed(2)
+                      : ''
+                  );
+
+                  if (mode !== 'partial') setPaymentReference('');
+
+                  if (mode === 'full') {
+                    setCustomerId('');
+                    setCustomerSearch('');
+                    setCustomerDropdownOpen(false);
+                    setNotes('');
+                  }
+                }}
+                disabled={saving}
+              >
+                <option value="full">{t('sales.fullPayment')}</option>
+                <option value="partial">{t('sales.partialPayment')}</option>
+                <option value="credit">{t('sales.creditSale')}</option>
+              </select>
+            </div>
+
+
+              {paymentMode !== 'full' && (
+              <div className="sales-customer-field">
+                <label htmlFor="sales-customer-search">
+                  {t('sales.customer')}
+                </label>
+
+                <div className="sales-customer-search">
+                  <input
+                    id="sales-customer-search"
+                    type="text"
+                    value={
+                      customerSearch ||
+                      customers.find(
+                        (customer) => String(customer._id) === String(customerId)
+                      )?.name ||
+                      ''
+                    }
+                    onFocus={() => setCustomerDropdownOpen(true)}
+                    onClick={() => setCustomerDropdownOpen(true)}
+                    onBlur={(event) => {
+                      if (!event.currentTarget.parentElement?.contains(event.relatedTarget)) {
+                        setCustomerDropdownOpen(false);
+                      }
+                    }}
+                    onChange={(event) => {
+                      setCustomerSearch(event.target.value);
+                      setCustomerId('');
+                      setCustomerDropdownOpen(true);
+                    }}
+                    placeholder={t('sales.walkIn')}
+                    autoComplete="off"
+                    disabled={saving}
+                  />
+
+                  {customerDropdownOpen && (
+                    <div className="sales-product-options" role="listbox">
+                      <button
+                        type="button"
+                        className="sales-product-option"
+                        role="option"
+                        aria-selected={!customerId}
+                        onClick={() => {
+                          setCustomerId('');
+                          setCustomerSearch('');
+                          setCustomerDropdownOpen(false);
+                        }}
+                        disabled={saving}
+                      >
+                        <span>{t('sales.walkIn')}</span>
+                      </button>
+
+                      {customers
+                        .filter((customer) => {
+                          const query = customerId
+                            ? ''
+                            : customerSearch.trim().toLocaleLowerCase();
+
+                          return (
+                            !query ||
+                            String(customer.name || '')
+                              .toLocaleLowerCase()
+                              .includes(query)
+                          );
+                        })
+                        .map((customer) => (
+                          <button
+                            key={customer._id}
+                            type="button"
+                            className="sales-product-option"
+                            role="option"
+                            aria-selected={String(customer._id) === String(customerId)}
+                            onClick={() => {
+                              setCustomerId(String(customer._id));
+                              setCustomerSearch(customer.name);
+                              setCustomerDropdownOpen(false);
+                            }}
+                            disabled={saving}
+                          >
+                            <span>{customer.name}</span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
                 <span className="sales-field-help">
                   {t('sales.customerRequired')}
                 </span>
-              </label>
+              </div>
 
+              )}
+
+              {paymentMode === 'partial' && (
               <label>
                 {t('sales.amountPaid')}
                 <input
@@ -688,6 +867,7 @@ export default function SalesPage({ token }) {
                   disabled={saving}
                 />
               </label>
+              )}
 
               {Number(paidAmount) > 0 && (
                 <>
@@ -719,6 +899,7 @@ export default function SalesPage({ token }) {
                 </>
               )}
 
+              {paymentMode !== 'full' && (
               <label className="sales-notes-field">
                 {t('sales.notesOptional')}
                 <textarea
@@ -730,20 +911,7 @@ export default function SalesPage({ token }) {
                   disabled={saving}
                 />
               </label>
-            </div>
-
-            <div className="sales-payment-preview">
-              <div>
-                <span>{t('sales.amountDue')}</span>
-                <strong>
-                  {formatMinor(
-                    Math.max(0, totalAmountMinor - moneyToMinor(Number(paidAmount) || 0))
-                  )}
-                </strong>
-              </div>
-              <p>
-                {t('sales.paymentPreview')}
-              </p>
+              )}
             </div>
 
             {formError && !paymentSale && (
@@ -853,11 +1021,6 @@ export default function SalesPage({ token }) {
           <div className="sales-panel-icon"><History size={19} /></div>
           <div>
             <h2>{t('sales.salesHistory')}</h2>
-            <p>
-              {pagination
-                ? t('sales.historySummary', { total: pagination.totalItems, shown: sales.length })
-                : t('sales.historyDefault')}
-            </p>
           </div>
         </div>
 

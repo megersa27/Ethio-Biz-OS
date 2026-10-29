@@ -553,3 +553,113 @@
     text-align: left;
   }
 }
+
+/* Searchable product field */
+.sales-product-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sales-product-search {
+  position: relative;
+  min-width: 0;
+}
+
+.sales-product-search input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.sales-product-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: grid;
+  gap: 3px;
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 5px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border, #e7ece9);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.sales-product-option {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-primary, #182b24);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sales-product-option:hover,
+.sales-product-option:focus-visible {
+  background: var(--table-header-bg, #f0f5f2);
+  outline: none;
+}
+
+.sales-product-option small {
+  color: var(--text-secondary, #687970);
+  font-size: 0.78rem;
+}
+
+
+.sales-customer-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sales-customer-search {
+  position: relative;
+  min-width: 0;
+}
+
+.sales-customer-search input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+
+
+/* Partial payment toggle */
+.sales-partial-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  color: var(--text-primary, #182b24);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.sales-partial-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary, #26734d);
+}
+
+
+.sales-payment-mode {
+  max-width: 360px;
+  margin-bottom: 12px;
+}
+
+.sales-payment-mode label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.sales-payment-mode select {
+  box-sizing: border-box;
+  width: 100%;
+}
