@@ -7,7 +7,6 @@ import {
   History,
   Plus,
   RefreshCw,
-  RotateCcw,
   ShoppingCart,
   Trash2,
   Wallet,
@@ -121,10 +120,10 @@ export default function SalesPage({ token }) {
   const [reloadKey, setReloadKey] = useState(0);
 
   const [items, setItems] = useState([
-    { productId: '', quantity: '' },
+    { productId: '', quantity: '1' },
   ]);
   const [customerId, setCustomerId] = useState('');
-  const [paidAmount, setPaidAmount] = useState('');
+  const [paidAmount, setPaidAmount] = useState('0');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentReference, setPaymentReference] = useState('');
   const [notes, setNotes] = useState('');
@@ -161,14 +160,16 @@ export default function SalesPage({ token }) {
         setPagination(salesResult.pagination || null);
 
         setItems((current) =>
-          current.map((item) => ({
+          current.map((item, index) => ({
             ...item,
             productId:
               item.productId && productRows.some(
                 (product) => String(product._id) === item.productId
               )
                 ? item.productId
-                : '',
+                : index === 0
+                  ? String(productRows[0]?._id || '')
+                  : item.productId,
           }))
         );
       } catch (error) {
@@ -225,23 +226,25 @@ export default function SalesPage({ token }) {
 
   function updateItem(index, field, value) {
     setItems((current) =>
-      current.map((item, itemIndex) => {
-        if (itemIndex !== index) return item;
-        const updated = { ...item, [field]: value };
-        if (field === 'productId' && value && !item.quantity) {
-          updated.quantity = '1';
-        }
-        return updated;
-      })
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? { ...item, [field]: value }
+          : item
+      )
     );
   }
 
   function addItem() {
+    const used = new Set(items.map((item) => item.productId));
+    const nextProduct = products.find(
+      (product) => !used.has(String(product._id))
+    );
+
     setItems((current) => [
       ...current,
       {
-        productId: '',
-        quantity: '',
+        productId: String(nextProduct?._id || ''),
+        quantity: '1',
       },
     ]);
   }
@@ -254,23 +257,22 @@ export default function SalesPage({ token }) {
 
       return remaining.length
         ? remaining
-        : [{ productId: '', quantity: '' }];
+        : [{ productId: '', quantity: '1' }];
     });
   }
 
   function resetSaleForm() {
     setItems([
       {
-        productId: '',
-        quantity: '',
+        productId: String(products[0]?._id || ''),
+        quantity: '1',
       },
     ]);
     setCustomerId('');
-    setPaidAmount('');
+    setPaidAmount('0');
     setPaymentMethod('cash');
     setPaymentReference('');
     setNotes('');
-    setFormError('');
   }
 
   async function handleCreateSale(event) {
@@ -330,7 +332,7 @@ export default function SalesPage({ token }) {
       });
     }
 
-    const paidEtb = paidAmount === '' ? 0 : Number(paidAmount);
+    const paidEtb = Number(paidAmount);
 
     if (
       !Number.isFinite(paidEtb) ||
