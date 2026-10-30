@@ -21,6 +21,7 @@ import {
 } from '../services/api.js';
 
 import { formatMinor } from '../utils/currency.js';
+import { groupSalesByDay } from '../utils/salesHistory.js';
 import './SalesPage.css';
 
 const paymentMethods = [
@@ -44,14 +45,43 @@ const formatDate = (value) => {
   });
 };
 
-function getPaymentLabel(sale, t) {
-  if (sale.saleStatus === 'CANCELLED') return t('sales.statusCancelled');
+function getPaymentStatus(sale) {
+  if (!sale || sale.saleStatus === 'CANCELLED') {
+    return 'cancelled';
+  }
 
-  switch (sale.paymentStatus) {
-    case 'PAID':
+  const paymentStatus = String(sale.paymentStatus || '').toUpperCase();
+  const paidAmountMinor = Number(sale.paidAmountMinor || 0);
+  const balanceDueMinor = Number(sale.balanceDueMinor || 0);
+  const totalAmountMinor = Number(sale.totalAmountMinor || 0);
+
+  if (paymentStatus === 'PAID' || (
+    totalAmountMinor > 0 && paidAmountMinor >= totalAmountMinor
+  )) {
+    return 'paid';
+  }
+
+  if (paymentStatus === 'PARTIAL' || (
+    paidAmountMinor > 0 && balanceDueMinor > 0
+  )) {
+    return 'partial';
+  }
+
+  if (paymentStatus === 'UNPAID' || paidAmountMinor === 0) {
+    return 'unpaid';
+  }
+
+  return 'unpaid';
+}
+
+function getPaymentLabel(sale, t) {
+  switch (getPaymentStatus(sale)) {
+    case 'paid':
       return t('sales.statusPaid');
-    case 'PARTIAL':
+    case 'partial':
       return t('sales.statusPartial');
+    case 'cancelled':
+      return t('sales.statusCancelled');
     default:
       return t('sales.statusUnpaid');
   }
@@ -222,6 +252,21 @@ export default function SalesPage({ token }) {
       }, 0),
     [items, products]
   );
+
+  const productTypesSoldToday = useMemo(() => {
+    const uniqueNames = new Set();
+
+    todaySales.forEach((sale) => {
+      if (!Array.isArray(sale.items)) return;
+
+      sale.items.forEach((item) => {
+        const name = item.productName || item.productId;
+        if (name) uniqueNames.add(String(name));
+      });
+    });
+
+    return uniqueNames.size;
+  }, [todaySales]);
 
   const totalOutstandingMinor = todaySales.reduce(
     (sum, sale) =>
@@ -479,6 +524,12 @@ export default function SalesPage({ token }) {
     );
   };
 
+  const paymentBalanceLabel = t('sales.saleBalance', { amount: '' })
+    .replace(/[:፦].*$/, '')
+    .trim();
+
+  const groupedSales = useMemo(() => groupSalesByDay(sales), [sales]);
+
   return (
     <section className="sales-page">
       <div className="sales-heading">
@@ -516,8 +567,8 @@ export default function SalesPage({ token }) {
         <article className="sales-summary-card">
           <div className="sales-summary-icon"><ShoppingCart size={20} /></div>
           <div>
-            <p>{t('sales.todaysSales')}</p>
-            <strong>{loading ? t('common.loadingEllipsis') : todaySales.length}</strong>
+            <p>{t('sales.productTypesSoldToday')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : productTypesSoldToday}</strong>
           </div>
         </article>
 
@@ -931,88 +982,144 @@ export default function SalesPage({ token }) {
                 {saving ? t('common.saving') : <><ShoppingCart size={16} /> {t('sales.recordSaleBtn')}</>}
               </button>
             </div>
+
+            {notice && !paymentSale && (
+              <div className="sales-alert sales-alert-success" role="status">
+                <CheckCircle2 size={17} />
+                <span>{notice}</span>
+              </div>
+            )}
           </form>
         )}
       </div>
 
       {paymentSale && (
-        <div className="sales-panel sales-payment-panel">
-          <div className="sales-panel-heading">
-            <div className="sales-panel-icon"><Wallet size={19} /></div>
-            <div>
-              <h2>{t('sales.recordPayment')}</h2>
-              <p>
-                {t('sales.saleBalance', { amount: formatMinor(paymentSale.balanceDueMinor) })}
-              </p>
-            </div>
-          </div>
-
-          <form className="sales-form" onSubmit={handleAdditionalPayment}>
-            <div className="sales-form-grid">
-              <label>
-                {t('sales.amountReceived')}
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={additionalPayment}
-                  onChange={(event) => setAdditionalPayment(event.target.value)}
-                  required
-                  disabled={saving}
-                />
-              </label>
-
-              <label>
-                {t('sales.paymentMethod')}
-                <select
-                  value={additionalPaymentMethod}
-                  onChange={(event) => setAdditionalPaymentMethod(event.target.value)}
-                  disabled={saving}
-                >
-                  {paymentMethods.map((method) => (
-                    <option key={method.value} value={method.value}>
-                      {t(`paymentMethods.${method.value}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="sales-notes-field">
-                {t('sales.referenceOptional')}
-                <input
-                  value={additionalReference}
-                  onChange={(event) => setAdditionalReference(event.target.value)}
-                  maxLength={120}
-                  placeholder={t('sales.referencePh')}
-                  disabled={saving}
-                />
-              </label>
-            </div>
-
-            {formError && paymentSale && (
-              <div className="sales-alert sales-alert-error" role="alert">
-                <AlertTriangle size={17} />
-                <span>{formError}</span>
+        <div
+          className="sales-payment-overlay"
+          onClick={() => {
+            setPaymentSale(null);
+            setFormError('');
+          }}
+        >
+          <div
+            className="sales-payment-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('sales.recordPayment')}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="sales-payment-header">
+              <div>
+                <p className="eyebrow">{t('sales.recordPayment')}</p>
+                <h3>{customerName(paymentSale)}</h3>
               </div>
-            )}
-
-            <div className="sales-form-footer">
               <button
                 type="button"
-                className="secondary-button"
+                className="sales-payment-close"
                 onClick={() => {
                   setPaymentSale(null);
                   setFormError('');
                 }}
-                disabled={saving}
+                aria-label={t('common.cancel')}
               >
-                {t('common.cancel')}
-              </button>
-              <button className="primary-button" type="submit" disabled={saving}>
-                {saving ? t('common.saving') : t('sales.recordPaymentBtn')}
+                ×
               </button>
             </div>
-          </form>
+
+            <div className="sales-payment-summary">
+              <div>
+                <span>{t('sales.customer')}</span>
+                <strong>{customerName(paymentSale)}</strong>
+              </div>
+              <div>
+                <span>{t('sales.saleTotal')}</span>
+                <strong>{formatMinor(paymentSale.totalAmountMinor)}</strong>
+              </div>
+              <div>
+                <span>{t('sales.amountPaid')}</span>
+                <strong>{formatMinor(Number(paymentSale.paidAmountMinor || 0))}</strong>
+              </div>
+              <div className="sales-payment-balance-item">
+                <span>{paymentBalanceLabel}</span>
+                <strong>{formatMinor(Number(paymentSale.balanceDueMinor || 0))}</strong>
+              </div>
+            </div>
+
+            <form className="sales-form" onSubmit={handleAdditionalPayment}>
+              <div className="sales-form-grid">
+                <label>
+                  {t('sales.amountDue')}
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={additionalPayment}
+                    onChange={(event) => setAdditionalPayment(event.target.value)}
+                    required
+                    disabled={saving}
+                    autoFocus
+                  />
+                </label>
+
+                <label>
+                  {t('sales.paymentMethod')}
+                  <select
+                    value={additionalPaymentMethod}
+                    onChange={(event) => setAdditionalPaymentMethod(event.target.value)}
+                    disabled={saving}
+                  >
+                    {paymentMethods.map((method) => (
+                      <option key={method.value} value={method.value}>
+                        {t(`paymentMethods.${method.value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="sales-notes-field">
+                  {t('sales.referenceOptional')}
+                  <input
+                    value={additionalReference}
+                    onChange={(event) => setAdditionalReference(event.target.value)}
+                    maxLength={120}
+                    placeholder={t('sales.referencePh')}
+                    disabled={saving}
+                  />
+                </label>
+              </div>
+
+              {formError && paymentSale && (
+                <div className="sales-alert sales-alert-error" role="alert">
+                  <AlertTriangle size={17} />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <div className="sales-form-footer">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setPaymentSale(null);
+                    setFormError('');
+                  }}
+                  disabled={saving}
+                >
+                  {t('common.cancel')}
+                </button>
+                <button className="primary-button" type="submit" disabled={saving}>
+                  {saving ? t('common.saving') : t('sales.recordPaymentBtn')}
+                </button>
+              </div>
+
+              {notice && paymentSale && (
+                <div className="sales-alert sales-alert-success" role="status">
+                  <CheckCircle2 size={17} />
+                  <span>{notice}</span>
+                </div>
+              )}
+            </form>
+          </div>
         </div>
       )}
 
@@ -1054,41 +1161,51 @@ export default function SalesPage({ token }) {
                   </td>
                 </tr>
               ) : (
-                sales.map((sale) => (
-                  <tr key={sale._id}>
-                    <td>{formatDate(sale.createdAt)}</td>
-                    <td className="sales-id">
-                      {String(sale._id || '').slice(-8).toUpperCase()}
+                groupedSales.flatMap((group) => [
+                  <tr key={`${group.key}-header`} className="sales-day-header-row">
+                    <td colSpan={9} className="sales-day-header-cell">
+                      <div className="sales-day-header-content">
+                        <span>{t(group.label)}</span>
+                        <small>{group.sales.length}</small>
+                      </div>
                     </td>
-                    <td>{customerName(sale)}</td>
-                    <td>
-                      {Array.isArray(sale.items)
-                        ? sale.items.map((item) => `${item.productName} × ${item.quantity}`).join(', ')
-                        : '—'}
-                    </td>
-                    <td><strong>{formatMinor(sale.totalAmountMinor)}</strong></td>
-                    <td>{formatMinor(sale.paidAmountMinor)}</td>
-                    <td>{formatMinor(sale.balanceDueMinor)}</td>
-                    <td>
-                      <span className={`sales-status sales-status-${String(sale.saleStatus === 'CANCELLED' ? 'cancelled' : sale.paymentStatus || 'unpaid').toLowerCase()}`}>
-                        {getPaymentLabel(sale, t)}
-                      </span>
-                    </td>
-                    <td>
-                      {sale.saleStatus !== 'CANCELLED' &&
-                        Number(sale.balanceDueMinor || 0) > 0 && (
-                          <button
-                            type="button"
-                            className="sales-payment-button"
-                            onClick={() => openPaymentForm(sale)}
-                            disabled={saving}
-                          >
-                            {t('sales.addPayment')}
-                          </button>
-                        )}
-                    </td>
-                  </tr>
-                ))
+                  </tr>,
+                  ...group.sales.map((sale) => (
+                    <tr key={sale._id}>
+                      <td>{formatDate(sale.createdAt)}</td>
+                      <td className="sales-id">
+                        {String(sale._id || '').slice(-8).toUpperCase()}
+                      </td>
+                      <td>{customerName(sale)}</td>
+                      <td>
+                        {Array.isArray(sale.items)
+                          ? sale.items.map((item) => `${item.productName} × ${item.quantity}`).join(', ')
+                          : '—'}
+                      </td>
+                      <td><strong>{formatMinor(sale.totalAmountMinor)}</strong></td>
+                      <td>{formatMinor(sale.paidAmountMinor)}</td>
+                      <td>{formatMinor(sale.balanceDueMinor)}</td>
+                      <td>
+                        <span className={`sales-status sales-status-${getPaymentStatus(sale)}`}>
+                          {getPaymentLabel(sale, t)}
+                        </span>
+                      </td>
+                      <td>
+                        {sale.saleStatus !== 'CANCELLED' &&
+                          Number(sale.balanceDueMinor || 0) > 0 && (
+                            <button
+                              type="button"
+                              className="sales-payment-button"
+                              onClick={() => openPaymentForm(sale)}
+                              disabled={saving}
+                            >
+                              {t('sales.addPayment')}
+                            </button>
+                          )}
+                      </td>
+                    </tr>
+                  )),
+                ])
               )}
             </tbody>
           </table>

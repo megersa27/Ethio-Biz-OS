@@ -25,6 +25,7 @@ const emptyForm = {
   unit: 'piece',
   costPrice: '',
   sellingPrice: '',
+  stockQuantity: '0',
   minimumStockLevel: '5',
 };
 
@@ -131,6 +132,7 @@ export default function ProductsPage({ token }) {
       unit: product.unit || 'piece',
       costPrice: ((product.costPriceMinor || 0) / 100).toFixed(2),
       sellingPrice: ((product.sellingPriceMinor || 0) / 100).toFixed(2),
+      stockQuantity: String(product.stockQuantity ?? 0),
       minimumStockLevel: String(product.minimumStockLevel ?? 0),
     });
     setError('');
@@ -159,9 +161,14 @@ export default function ProductsPage({ token }) {
 
     try {
       const minimumStockLevel = Number(form.minimumStockLevel);
+      const stockQuantity = Number(form.stockQuantity);
 
       if (!Number.isFinite(minimumStockLevel) || minimumStockLevel < 0) {
         throw new Error(t('products.errMinStock'));
+      }
+
+      if (!Number.isFinite(stockQuantity) || stockQuantity < 0) {
+        throw new Error(t('products.errStockQuantity'));
       }
 
       const productData = {
@@ -183,7 +190,7 @@ export default function ProductsPage({ token }) {
         await createProduct(token, {
           ...productData,
           unit: form.unit,
-          stockQuantity: 0,
+          stockQuantity,
         });
         setNotice(t('products.created'));
       }
@@ -474,7 +481,22 @@ export default function ProductsPage({ token }) {
                   />
                 </label>
 
-                <label className="products-form-full">
+                {!editingProduct && (
+                  <label>
+                    {t('products.initialStock')}
+                    <input
+                      name="stockQuantity"
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={form.stockQuantity}
+                      onChange={updateField}
+                      required
+                    />
+                  </label>
+                )}
+
+                <label className={editingProduct ? 'products-form-full' : ''}>
                   {t('products.reorderLevel')}
                   <input
                     name="minimumStockLevel"
