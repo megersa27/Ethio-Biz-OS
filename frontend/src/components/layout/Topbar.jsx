@@ -6,7 +6,9 @@ import {
   Boxes,
   ChevronDown,
   LogOut,
+  Moon,
   Settings,
+  Sun,
   Wallet,
 } from 'lucide-react';
 import { formatMinor } from '../../utils/currency.js';
@@ -14,6 +16,8 @@ import LanguageSwitcher from './LanguageSwitcher.jsx';
 
 export default function Topbar({
   activePage,
+  theme = 'light',
+  onToggleTheme,
   onOpenMenu,
   onNavigate,
   userName,
@@ -80,6 +84,16 @@ export default function Topbar({
       </div>
 
       <div className="topbar-actions" ref={menuRef}>
+        <button
+          type="button"
+          className="icon-button theme-toggle"
+          onClick={onToggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
+
         <LanguageSwitcher />
 
         <div className="topbar-menu-wrap">

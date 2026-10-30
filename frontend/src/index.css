@@ -8,14 +8,73 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+
   --green: #176b4d;
   --green-dark: #10523b;
+  --green-strong: #0f4e3a;
   --green-light: #e7f4ed;
+  --green-soft: #edf8f2;
+
   --text: #17211d;
-  --muted: #78847d;
+  --text-strong: #0d1714;
+  --muted: #647169;
+  --muted-soft: #8b968f;
   --border: #e8ede9;
   --surface: #ffffff;
+  --surface-raised: #f7f9f7;
+  --surface-soft: #f3f7f4;
   --page: #f6f8f6;
+
+  --success: #176b4d;
+  --success-bg: #eaf6ef;
+  --success-border: #cce9d7;
+  --warning: #b76b2d;
+  --warning-bg: #fff0df;
+  --warning-border: #f5dcc0;
+  --danger: #b64b4b;
+  --danger-bg: #ffeded;
+  --danger-border: #f5d6d6;
+  --info: #4775b8;
+  --info-bg: #eaf1fd;
+  --purple: #8760b6;
+  --purple-bg: #f1eafd;
+
+  --radius: 14px;
+}
+
+:root[data-theme='dark'] {
+  --green: #69e0a3;
+  --green-dark: #9beec0;
+  --green-strong: #c8f7dc;
+  --green-light: rgba(105, 224, 163, 0.13);
+  --green-soft: rgba(105, 224, 163, 0.08);
+
+  --text: #edf7f1;
+  --text-strong: #f3faf6;
+  --muted: #b7c9c0;
+  --muted-soft: #98a9a0;
+  --border: rgba(148, 163, 184, 0.18);
+  --surface: #18242d;
+  --surface-raised: #1d2d36;
+  --surface-soft: #22343d;
+  --page: #0d1419;
+  --panel-alt: #1d2d36;
+  --soft: #22343d;
+
+  --success: #8ee7b0;
+  --success-bg: rgba(105, 224, 163, 0.14);
+  --success-border: rgba(105, 224, 163, 0.25);
+  --warning: #f3c77b;
+  --warning-bg: rgba(232, 177, 102, 0.12);
+  --warning-border: rgba(232, 177, 102, 0.22);
+  --danger: #ff9a9a;
+  --danger-bg: rgba(255, 122, 122, 0.12);
+  --danger-border: rgba(255, 122, 122, 0.22);
+  --info: #a6c5ff;
+  --info-bg: rgba(93, 160, 255, 0.12);
+  --purple: #d1b4ff;
+  --purple-bg: rgba(167, 125, 255, 0.12);
+
   --radius: 14px;
 }
 
@@ -33,6 +92,15 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--page);
+  color: var(--text);
+}
+
+:root[data-theme='dark'] body {
+  background:
+    radial-gradient(circle at top left, rgba(105, 224, 163, 0.08), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(75, 164, 255, 0.08), transparent 24%),
+    var(--page);
 }
 
 body, button, input, select, textarea {
@@ -75,4 +143,160 @@ h1, h2, h3, h4 {
 ::selection {
   color: #fff;
   background: #176b4d;
+}
+
+
+/* ETHIOBIZ COMPLETE DARK MODE */
+
+:root[data-theme='dark'] {
+  color: #edf7f1;
+  background: #0d1419;
+  color-scheme: dark;
+
+  --text-primary: #edf7f1;
+  --text-secondary: #b7c9c0;
+  --input-bg: #1d2d36;
+  --table-header-bg: #22343d;
+  --card-bg: #18242d;
+  --panel-alt: #1d2d36;
+}
+
+:root[data-theme='dark'] body {
+  background: var(--page);
+  color: var(--text);
+}
+
+.topbar {
+  background: var(--surface);
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .app-shell,
+:root[data-theme='dark'] .main-area,
+:root[data-theme='dark'] .content,
+:root[data-theme='dark'] .layout-dashboard,
+:root[data-theme='dark'] .page {
+  background: var(--page);
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .sidebar,
+:root[data-theme='dark'] .topbar,
+:root[data-theme='dark'] .topbar-popover {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .stat-card,
+:root[data-theme='dark'] .sales-panel,
+:root[data-theme='dark'] .sales-summary-card,
+:root[data-theme='dark'] .sales-line,
+:root[data-theme='dark'] .sales-total-strip,
+:root[data-theme='dark'] .settings-card,
+:root[data-theme='dark'] .reports-panel,
+:root[data-theme='dark'] .report-metric,
+:root[data-theme='dark'] .customers-summary,
+:root[data-theme='dark'] .inventory-panel,
+:root[data-theme='dark'] .expenses-panel,
+:root[data-theme='dark'] .help-card,
+:root[data-theme='dark'] .help-card-panel {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] body input:not([type='checkbox']):not([type='radio']),
+:root[data-theme='dark'] body select,
+:root[data-theme='dark'] body textarea {
+  background-color: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] body input::placeholder,
+:root[data-theme='dark'] body textarea::placeholder {
+  color: var(--muted);
+}
+
+:root[data-theme='dark'] table {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] th {
+  background: var(--table-header-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] td {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] tr {
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .sales-product-options,
+:root[data-theme='dark'] .sales-product-option {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .sales-product-option:hover {
+  background: var(--panel-alt);
+}
+
+:root[data-theme='dark'] .sales-field-help,
+:root[data-theme='dark'] .page-heading p,
+:root[data-theme='dark'] .eyebrow,
+:root[data-theme='dark'] .breadcrumb,
+:root[data-theme='dark'] .panel-subtitle,
+:root[data-theme='dark'] .popover-heading,
+:root[data-theme='dark'] .notification-copy small,
+:root[data-theme='dark'] .profile-popover-copy small {
+  color: var(--muted);
+}
+
+:root[data-theme='dark'] .search-result-item,
+:root[data-theme='dark'] .notification-item,
+:root[data-theme='dark'] .profile-menu-item {
+  background: transparent;
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .notification-item:hover,
+:root[data-theme='dark'] .profile-menu-item:hover {
+  background: var(--panel-alt);
+}
+
+:root[data-theme='dark'] .icon-button,
+:root[data-theme='dark'] .secondary-button {
+  background: var(--panel-alt);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .reports-export,
+:root[data-theme='dark'] .reports-filters button {
+  background: var(--panel-alt);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .reports-filters input {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .settings-field input,
+:root[data-theme='dark'] .settings-field textarea {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
 }

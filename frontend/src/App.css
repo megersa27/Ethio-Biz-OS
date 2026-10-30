@@ -14,8 +14,9 @@
   width: 248px;
   height: 100vh;
   padding: 26px 16px 18px;
-  background: #fff;
+  background: var(--surface);
   border-right: 1px solid var(--border);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
 }
 
 .brand {
@@ -73,7 +74,7 @@
   gap: 12px;
   width: 100%;
   padding: 12px;
-  color: #647169;
+  color: var(--muted);
   background: transparent;
   border: 0;
   border-radius: 10px;
@@ -85,7 +86,7 @@
 
 .nav-item:hover {
   color: var(--green);
-  background: #f3f8f5;
+  background: var(--green-light);
 }
 
 .nav-item.active {
@@ -105,8 +106,8 @@
 .help-card {
   padding: 15px;
   margin: 0 2px 18px;
-  background: #f4f8f5;
-  border: 1px solid #e9f0eb;
+  background: linear-gradient(135deg, var(--green-light), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -245,7 +246,7 @@
   justify-content: space-between;
   min-height: 76px;
   padding: 0 34px;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
 }
@@ -272,8 +273,8 @@
   gap: 9px;
   width: 230px;
   padding: 10px 12px;
-  color: #8b968f;
-  background: #f7f9f7;
+  color: var(--muted-soft);
+  background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: 9px;
 }
@@ -294,8 +295,8 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  color: #647169;
-  background: #fff;
+  color: var(--muted);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
 }
@@ -367,24 +368,26 @@
 }
 
 .primary-button {
-  color: #fff;
-  background: var(--green);
-  border: 1px solid var(--green);
+  color: #0d1419;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 6px 18px rgba(105, 224, 163, 0.18);
 }
 
 .primary-button:hover {
-  background: var(--green-dark);
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
   transform: translateY(-1px);
 }
 
 .secondary-button {
-  color: #536259;
-  background: #fff;
+  color: var(--text);
+  background: var(--surface);
   border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(15, 23, 32, 0.12);
 }
 
 .secondary-button:hover {
-  background: #f8faf8;
+  background: var(--green-light);
 }
 
 .stats-grid {
@@ -400,7 +403,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 2px 8px rgba(20, 50, 32, 0.015);
+  box-shadow: 0 12px 28px rgba(1, 10, 14, 0.12);
 }
 
 .stat-top {
@@ -412,7 +415,7 @@
 }
 
 .stat-label {
-  color: #69766e;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 600;
 }
@@ -428,18 +431,18 @@
 }
 
 .stat-icon.orange {
-  color: #b76b2d;
-  background: #fff0df;
+  color: var(--warning);
+  background: var(--warning-bg);
 }
 
 .stat-icon.blue {
-  color: #4775b8;
-  background: #eaf1fd;
+  color: var(--info);
+  background: var(--info-bg);
 }
 
 .stat-icon.purple {
-  color: #8760b6;
-  background: #f1eafd;
+  color: var(--purple);
+  background: var(--purple-bg);
 }
 
 .stat-value {
@@ -461,12 +464,12 @@
 }
 
 .trend-up {
-  color: #208357;
+  color: var(--success);
   font-weight: 700;
 }
 
 .trend-down {
-  color: #c46b48;
+  color: var(--warning);
   font-weight: 700;
 }
 
@@ -480,7 +483,7 @@
 .panel {
   min-width: 0;
   padding: 22px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
@@ -509,8 +512,8 @@
 .select-control {
   max-width: 135px;
   padding: 8px 10px;
-  color: #647169;
-  background: #fff;
+  color: var(--text);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 10px;
@@ -565,8 +568,8 @@
   flex-shrink: 0;
   width: 39px;
   height: 39px;
-  color: #8c6a42;
-  background: #f9f0e3;
+  color: var(--warning);
+  background: var(--warning-bg);
   border-radius: 10px;
 }
 
@@ -592,16 +595,16 @@
 .stock-count {
   flex-shrink: 0;
   padding: 6px 8px;
-  color: #b56a36;
-  background: #fff2e4;
+  color: var(--warning);
+  background: var(--warning-bg);
   border-radius: 7px;
   font-size: 10px;
   font-weight: 700;
 }
 
 .stock-count.critical {
-  color: #bd4c4c;
-  background: #ffeded;
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .panel-footer {
@@ -646,10 +649,10 @@
 
 .data-table th {
   padding: 13px 22px;
-  color: #859087;
-  background: #f8faf8;
-  border-top: 1px solid #f0f3f0;
-  border-bottom: 1px solid #edf0ed;
+  color: var(--muted);
+  background: rgba(148, 163, 184, 0.04);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -658,7 +661,7 @@
 
 .data-table td {
   padding: 16px 22px;
-  border-bottom: 1px solid #f0f3f0;
+  border-bottom: 1px solid var(--border);
   font-size: 11px;
 }
 
@@ -667,7 +670,18 @@
 }
 
 .data-table tbody tr:hover {
-  background: #fbfcfb;
+  background: rgba(105, 224, 163, 0.06);
+}
+
+:root[data-theme='dark'] .data-table tbody tr:hover {
+  background: rgba(105, 224, 163, 0.12);
+}
+
+:root[data-theme='dark'] .data-table td,
+:root[data-theme='dark'] .data-table th,
+:root[data-theme='dark'] .table-bottom p,
+:root[data-theme='dark'] .table-secondary {
+  color: var(--text-primary, #edf7f1);
 }
 
 .table-primary {
@@ -711,7 +725,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 16px 22px;
-  border-top: 1px solid #f0f3f0;
+  border-top: 1px solid var(--border);
 }
 
 .table-bottom p {
@@ -1101,11 +1115,79 @@
   max-height: min(430px, calc(100vh - 115px));
   overflow-y: auto;
   padding: 8px;
-  background: #fff;
-  color: #172033;
-  border: 1px solid #e1e7ed;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 13px;
-  box-shadow: 0 16px 42px rgba(21, 35, 27, .16);
+  box-shadow: 0 20px 48px rgba(1, 8, 12, 0.38);
+}
+
+:root[data-theme='dark'] .topbar-popover,
+:root[data-theme='dark'] .topbar-popover * {
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .popover-heading,
+:root[data-theme='dark'] .notification-copy small,
+:root[data-theme='dark'] .search-result-copy small,
+:root[data-theme='dark'] .profile-popover-copy small,
+:root[data-theme='dark'] .chart-period-summary,
+:root[data-theme='dark'] .chart-message,
+:root[data-theme='dark'] .panel-subtitle,
+:root[data-theme='dark'] .breadcrumb,
+:root[data-theme='dark'] .profile-role,
+:root[data-theme='dark'] .table-bottom p,
+:root[data-theme='dark'] .stat-label,
+:root[data-theme='dark'] .stock-meta,
+:root[data-theme='dark'] .text-link,
+:root[data-theme='dark'] .help-card p,
+:root[data-theme='dark'] .help-list,
+:root[data-theme='dark'] .profile-menu-item,
+:root[data-theme='dark'] .language-button,
+:root[data-theme='dark'] .profile-chevron,
+:root[data-theme='dark'] .search-box,
+:root[data-theme='dark'] .search-box input,
+:root[data-theme='dark'] .sidebar .nav-label,
+:root[data-theme='dark'] .nav-item {
+  color: var(--muted);
+}
+
+:root[data-theme='dark'] .search-box {
+  background: var(--panel-alt);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .search-result-item,
+:root[data-theme='dark'] .notification-item,
+:root[data-theme='dark'] .profile-menu-item {
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .search-result-copy strong,
+:root[data-theme='dark'] .notification-copy strong,
+:root[data-theme='dark'] .profile-popover-copy strong,
+:root[data-theme='dark'] .search-result-copy,
+:root[data-theme='dark'] .notification-copy,
+:root[data-theme='dark'] .profile-popover-copy {
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .top-profile-button .top-avatar,
+:root[data-theme='dark'] .profile-popover-avatar,
+:root[data-theme='dark'] .avatar {
+  background: rgba(102, 211, 154, 0.13);
+  color: var(--green-dark);
+}
+
+:root[data-theme='dark'] .layout-dashboard,
+:root[data-theme='dark'] .panel,
+:root[data-theme='dark'] .stat-card,
+:root[data-theme='dark'] .topbar,
+:root[data-theme='dark'] .sidebar,
+:root[data-theme='dark'] .help-card,
+:root[data-theme='dark'] .page,
+:root[data-theme='dark'] .app-shell {
+  background-color: var(--page);
 }
 
 .popover-heading {
@@ -1135,7 +1217,7 @@
 .search-result-item:hover,
 .notification-item:hover,
 .profile-menu-item:hover {
-  background: #f4f7f5;
+  background: var(--green-light);
 }
 
 .search-result-icon,

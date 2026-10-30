@@ -102,6 +102,12 @@ function getDashboardPeriodFilters(period, now = new Date()) {
 
 export default function App() {
   const { t } = useTranslation();
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+
+    const storedTheme = window.localStorage.getItem('ethioBizTheme');
+    return storedTheme === 'dark' ? 'dark' : 'light';
+  });
   const [activePage, setActivePage] = useState(() => {
     if (typeof window === 'undefined') return 'Dashboard';
 
@@ -123,6 +129,13 @@ export default function App() {
       window.localStorage.setItem(ACTIVE_PAGE_STORAGE_KEY, activePage);
     }
   }, [activePage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('ethioBizTheme', theme);
+  }, [theme]);
 
   useEffect(() => {
     const token = auth?.accessToken;
@@ -267,6 +280,8 @@ export default function App() {
       <main className="main-area">
         <Topbar
           activePage={activePage}
+          theme={theme}
+          onToggleTheme={() => setTheme((value) => value === 'dark' ? 'light' : 'dark')}
           onOpenMenu={() => setIsSidebarOpen(true)}
           onNavigate={setActivePage}
           userName={auth.user?.name}
