@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Activity,
   ArrowRight,
   Eye,
   EyeOff,
+  MoonStar,
   ShieldCheck,
+  SunMedium,
 } from 'lucide-react';
 
 import { loginUser, registerBusiness } from '../services/api.js';
@@ -23,12 +25,25 @@ const initialForm = {
 
 export default function AuthPage({ onLogin }) {
   const { t } = useTranslation();
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+
+    const storedTheme = window.localStorage.getItem('ethioBizTheme');
+    return storedTheme === 'dark' ? 'dark' : 'light';
+  });
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('ethioBizTheme', theme);
+  }, [theme]);
 
   const isRegister = mode === 'register';
 
@@ -155,6 +170,15 @@ export default function AuthPage({ onLogin }) {
 
       <section className="auth-form-side">
         <div className="auth-top-actions">
+          <button
+            type="button"
+            className="auth-theme-toggle"
+            onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <SunMedium size={17} /> : <MoonStar size={17} />}
+          </button>
           <LanguageSwitcher />
         </div>
 
