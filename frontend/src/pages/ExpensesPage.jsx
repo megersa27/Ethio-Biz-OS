@@ -22,6 +22,7 @@ import {
 } from '../services/api.js';
 
 import { formatMinor } from '../utils/currency.js';
+import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 import './ExpensesPage.css';
 
 const categories = [
@@ -84,6 +85,8 @@ export default function ExpensesPage({ token }) {
   const [editingExpense, setEditingExpense] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [reloadKey, setReloadKey] = useState(0);
+
+  useAutoDismissNotice(notice, setNotice);
 
   useEffect(() => {
     let cancelled = false;

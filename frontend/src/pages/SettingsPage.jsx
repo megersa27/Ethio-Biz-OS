@@ -6,6 +6,7 @@ import {
   updateSettingsProfile,
 } from '../services/api.js';
 import { supportedLanguages } from '../i18n.js';
+import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 import './SettingsPage.css';
 
 const emptyForm = {
@@ -25,6 +26,8 @@ export default function SettingsPage({ token, onProfileUpdated }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  useAutoDismissNotice(notice, setNotice);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);

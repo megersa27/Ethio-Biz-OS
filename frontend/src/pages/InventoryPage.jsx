@@ -14,6 +14,7 @@ import {
   getInventoryMovements,
   recordInventoryMovement,
 } from '../services/api.js';
+import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 
 import './InventoryPage.css';
 
@@ -44,6 +45,9 @@ export default function InventoryPage({ token }) {
   const [movements, setMovements] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [productFilter, setProductFilter] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+  const [productSearchFocused, setProductSearchFocused] = useState(false);
+  const [reasonSearchFocused, setReasonSearchFocused] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pageError, setPageError] = useState('');
@@ -52,10 +56,13 @@ export default function InventoryPage({ token }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [form, setForm] = useState({
     productId: '',
-    movementType: 'RECEIVED',
-    quantity: '1',
+    movementType: '',
+    quantity: '',
     reason: '',
   });
+  const [keepSelectionEmpty, setKeepSelectionEmpty] = useState(true);
+
+  useAutoDismissNotice(notice, setNotice);
 
   const movementOptions = [
     {
@@ -83,6 +90,17 @@ export default function InventoryPage({ token }) {
       label: t('inventory.optAdjustDownLabel'),
       description: t('inventory.optAdjustDownDesc'),
     },
+  ];
+
+  const reasonSuggestions = [
+    'Supplier delivery',
+    'Damaged goods',
+    'Expired stock',
+    'Stock adjustment',
+    'Customer return',
+    'Inventory count correction',
+    'Warehouse transfer',
+    'Lost stock',
   ];
 
   const getMovementLabel = (type) => {
@@ -121,15 +139,25 @@ export default function InventoryPage({ token }) {
         setMovements(movementResult.movements || []);
         setPagination(movementResult.pagination || null);
 
-        setForm((current) => ({
-          ...current,
-          productId:
-            current.productId && rows.some(
-              (product) => String(product._id) === current.productId
-            )
-              ? current.productId
-              : String(rows[0]?._id || ''),
-        }));
+        setForm((current) => {
+          if (keepSelectionEmpty) {
+            return {
+              ...current,
+              productId: '',
+            };
+          }
+
+          if (current.productId && rows.some(
+            (product) => String(product._id) === current.productId
+          )) {
+            return current;
+          }
+
+          return {
+            ...current,
+            productId: '',
+          };
+        });
       } catch (error) {
         if (!cancelled) {
           setPageError(error.message || t('inventory.errLoad'));
@@ -159,7 +187,77 @@ export default function InventoryPage({ token }) {
 
   function updateField(event) {
     const { name, value } = event.target;
+
+    if (name === 'productId') {
+      setKeepSelectionEmpty(false);
+    }
+
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleProductSearch(event) {
+    const nextValue = event.target.value;
+    setProductSearch(nextValue);
+
+    const normalized = nextValue.trim().toLowerCase();
+    const selectedProduct = products.find(
+      (product) => product.name.trim().toLowerCase() === normalized
+    );
+
+    setKeepSelectionEmpty(false);
+    setForm((current) => ({
+      ...current,
+      productId: selectedProduct ? String(selectedProduct._id) : '',
+    }));
+  }
+
+  function handleProductFieldFocus() {
+    setProductSearchFocused((current) => {
+      if (current) {
+        setProductSearch('');
+        setForm((currentForm) => ({ ...currentForm, productId: '' }));
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  function handleProductSelect(product) {
+    setKeepSelectionEmpty(false);
+    setProductSearch(product.name);
+    setProductSearchFocused(false);
+    setForm((current) => ({
+      ...current,
+      productId: String(product._id),
+    }));
+  }
+
+  function closeProductSuggestions() {
+    setProductSearchFocused(false);
+  }
+
+  function handleReasonFieldFocus() {
+    setReasonSearchFocused((current) => {
+      if (current) {
+        setForm((currentForm) => ({ ...currentForm, reason: '' }));
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  function handleReasonSelect(reason) {
+    setForm((current) => ({
+      ...current,
+      reason,
+    }));
+    setReasonSearchFocused(false);
+  }
+
+  function closeReasonSuggestions() {
+    setReasonSearchFocused(false);
   }
 
   async function handleSubmit(event) {
@@ -171,6 +269,11 @@ export default function InventoryPage({ token }) {
 
     if (!form.productId) {
       setFormError(t('inventory.errProduct'));
+      return;
+    }
+
+    if (!form.movementType) {
+      setFormError(t('inventory.errMovementType'));
       return;
     }
 
@@ -195,11 +298,14 @@ export default function InventoryPage({ token }) {
       });
 
       setNotice(t('inventory.movementSuccess'));
-      setForm((current) => ({
-        ...current,
-        quantity: '1',
+      setKeepSelectionEmpty(true);
+      setProductSearch('');
+      setForm({
+        productId: '',
+        movementType: '',
+        quantity: '',
         reason: '',
-      }));
+      });
       setReloadKey((value) => value + 1);
     } catch (error) {
       setFormError(error.message || t('inventory.errMovementFailed'));
@@ -281,26 +387,49 @@ export default function InventoryPage({ token }) {
         <form className="inventory-form" onSubmit={handleSubmit}>
           <label>
             {t('inventory.product')}
-            <select
-              name="productId"
-              value={form.productId}
-              onChange={updateField}
-              required
-              disabled={loading || products.length === 0 || saving}
-            >
-              {products.length === 0 && (
-                <option value="">{t('inventory.noProductsOption')}</option>
+            <div className="inventory-product-search-wrap">
+              <input
+                type="text"
+                name="productSearch"
+                className="inventory-product-search"
+                value={productSearch}
+                onChange={handleProductSearch}
+                onFocus={handleProductFieldFocus}
+                onBlur={() => setTimeout(closeProductSuggestions, 100)}
+                required
+                disabled={loading || products.length === 0 || saving}
+                placeholder={products.length === 0 ? t('inventory.noProductsOption') : 'Type product name'}
+              />
+
+              {productSearchFocused && (
+                <ul className="inventory-product-suggestions">
+                  {(productSearch.trim()
+                    ? products.filter((product) =>
+                        product.name.toLowerCase().includes(productSearch.trim().toLowerCase())
+                      )
+                    : products
+                  )
+                    .slice(0, 8)
+                    .map((product) => (
+                      <li key={product._id}>
+                        <button
+                          type="button"
+                          className="inventory-product-suggestion"
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            handleProductSelect(product);
+                          }}
+                        >
+                          <span>{product.name}</span>
+                          <small>
+                            {formatQuantity(product.stockQuantity)} {product.unit || 'piece'}
+                          </small>
+                        </button>
+                      </li>
+                    ))}
+                </ul>
               )}
-              {products.map((product) => (
-                <option key={product._id} value={product._id}>
-                  {t('inventory.productOption', {
-                    name: product.name,
-                    stock: formatQuantity(product.stockQuantity),
-                    unit: product.unit || 'piece',
-                  })}
-                </option>
-              ))}
-            </select>
+            </div>
           </label>
 
           <label>
@@ -311,6 +440,7 @@ export default function InventoryPage({ token }) {
               onChange={updateField}
               disabled={saving}
             >
+              <option value="" hidden>{t('inventory.chooseMovement')}</option>
               {movementOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -318,9 +448,11 @@ export default function InventoryPage({ token }) {
               ))}
             </select>
             <span className="inventory-field-hint">
-              {movementOptions.find(
-                (option) => option.value === form.movementType
-              )?.description}
+              {form.movementType
+                ? movementOptions.find(
+                    (option) => option.value === form.movementType
+                  )?.description
+                : ' '}
             </span>
           </label>
 
@@ -342,16 +474,45 @@ export default function InventoryPage({ token }) {
 
             <label>
               {t('inventory.reason')}
-              <input
-                type="text"
-                name="reason"
-                value={form.reason}
-                onChange={updateField}
-                maxLength={500}
-                required
-                disabled={saving}
-                placeholder={t('inventory.reasonPh')}
-              />
+              <div className="inventory-reason-search-wrap">
+                <input
+                  type="text"
+                  name="reason"
+                  className="inventory-reason-search"
+                  value={form.reason}
+                  onChange={updateField}
+                  onFocus={handleReasonFieldFocus}
+                  onBlur={() => setTimeout(closeReasonSuggestions, 100)}
+                  maxLength={500}
+                  required
+                  disabled={saving}
+                  placeholder={t('inventory.reasonPh')}
+                />
+
+                {reasonSearchFocused && (
+                  <ul className="inventory-product-suggestions inventory-reason-suggestions">
+                    {reasonSuggestions
+                      .filter((reason) =>
+                        reason.toLowerCase().includes(form.reason.trim().toLowerCase())
+                      )
+                      .slice(0, 6)
+                      .map((reason) => (
+                        <li key={reason}>
+                          <button
+                            type="button"
+                            className="inventory-product-suggestion"
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                              handleReasonSelect(reason);
+                            }}
+                          >
+                            <span>{reason}</span>
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
             </label>
           </div>
 

@@ -22,6 +22,7 @@ import {
 
 import { formatMinor } from '../utils/currency.js';
 import { groupSalesByDay } from '../utils/salesHistory.js';
+import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 import './SalesPage.css';
 
 const paymentMethods = [
@@ -148,6 +149,8 @@ export default function SalesPage({ token }) {
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+
+  useAutoDismissNotice(notice, setNotice);
 
   const [items, setItems] = useState([
     { productId: '', productSearch: '', quantity: '' },

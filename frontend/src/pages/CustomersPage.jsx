@@ -8,6 +8,7 @@ import {
 import {
   createCustomer, deactivateCustomer, getCustomers, updateCustomer,
 } from '../services/api.js';
+import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 import './CustomersPage.css';
 
 const emptyForm = {
@@ -26,6 +27,8 @@ export default function CustomersPage({ token }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [reload, setReload] = useState(0);
+
+  useAutoDismissNotice(notice, setNotice);
 
   useEffect(() => {
     let cancelled = false;

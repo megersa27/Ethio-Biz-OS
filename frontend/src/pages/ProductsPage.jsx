@@ -16,6 +16,7 @@ import {
   getProducts,
   updateProduct,
 } from '../services/api.js';
+import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 
 import './ProductsPage.css';
 
@@ -71,6 +72,8 @@ export default function ProductsPage({ token }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState(emptyForm);
+
+  useAutoDismissNotice(notice, setNotice);
 
   function toMinor(value, fieldName) {
     if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0) {
