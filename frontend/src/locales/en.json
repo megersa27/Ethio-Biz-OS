@@ -281,7 +281,14 @@
     "partialPayment": "Partial payment",
     "paymentType": "Payment type",
     "fullPayment": "Full payment",
-    "creditSale": "Credit sale"
+    "creditSale": "Credit sale",
+    "addNewCustomer": "Add new customer",
+    "saveCustomer": "Save customer",
+    "customerSaved": "Customer saved and selected.",
+    "customerAlreadyExists": "This customer already exists and has been selected.",
+    "customerReloadError": "Customer was saved, but could not be loaded. Please refresh.",
+    "customerCreateError": "Could not save customer. Please try again.",
+    "selectCreditCustomer": "Select customer (with credit)"
   },
   "paymentMethods": {
     "cash": "Cash",
@@ -456,7 +463,9 @@
     "deactivateTitle": "Deactivate customer",
     "confirmDeactivate": "Deactivate {{name}}? Historical sales records will be retained.",
     "deactivated": "{{name}} has been deactivated.",
-    "errDeactivate": "Customer could not be deactivated."
+    "errDeactivate": "Customer could not be deactivated.",
+    "totalCreditCustomers": "Credit customers",
+    "thOutstanding": "Outstanding"
   },
   "expenses": {
     "eyebrow": "YOUR BUSINESS WORKSPACE",

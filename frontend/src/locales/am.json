@@ -281,7 +281,14 @@
     "partialPayment": "ከፊል ክፍያ",
     "paymentType": "የክፍያ አይነት",
     "fullPayment": "ሙሉ ክፍያ",
-    "creditSale": "በብድር ሽያጭ"
+    "creditSale": "በብድር ሽያጭ",
+    "addNewCustomer": "አዲስ ደንበኛ ጨምር",
+    "saveCustomer": "ደንበኛን አስቀምጥ",
+    "customerSaved": "ደንበኛው ተመዝግቦ ተመርጧል።",
+    "customerAlreadyExists": "ይህ ደንበኛ አስቀድሞ አለ፤ ተመርጧል።",
+    "customerReloadError": "ደንበኛው ተመዝግቧል፣ ግን መጫን አልተቻለም። ያድሱ።",
+    "customerCreateError": "ደንበኛውን ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ።",
+    "selectCreditCustomer": "በብድር የሚገዛ ደንበኛ ይምረጡ"
   },
   "paymentMethods": {
     "cash": "ጥሬ ገንዘብ",
@@ -456,7 +463,9 @@
     "deactivateTitle": "ደንበኛ አሰናክል",
     "confirmDeactivate": "{{name}} አሰናክል? የታሪክ የሽያጭ መዝገቦች ይጠበቃሉ።",
     "deactivated": "{{name}} ተሰናክሏል።",
-    "errDeactivate": "ደንበኛን ማሰናከል አልተቻለም።"
+    "errDeactivate": "ደንበኛን ማሰናከል አልተቻለም።",
+    "totalCreditCustomers": "የብድር ደንበኞች",
+    "thOutstanding": "ያልተከፈለ ቀሪ"
   },
   "expenses": {
     "eyebrow": "የንግድዎ የስራ ቦታ",

@@ -281,7 +281,14 @@
     "partialPayment": "Kaffaltii muraasaa",
     "paymentType": "Gosa kaffaltii",
     "fullPayment": "Kaffaltii guutuu",
-    "creditSale": "Gurgurtaa liqii"
+    "creditSale": "Gurgurtaa liqii",
+    "addNewCustomer": "Maamila haaraa dabali",
+    "saveCustomer": "Maamila olkaa'i",
+    "customerSaved": "Maamilaan olkaa'ameera; filatameera.",
+    "customerAlreadyExists": "Maamilaan kun duraan jira; filatameera.",
+    "customerReloadError": "Maamilaan olkaa'ameera, garuu fe'uun hin danda'amne. Haaromsi.",
+    "customerCreateError": "Maamila olkaa'uun hin danda'amne. Irra deebi'i yaali.",
+    "selectCreditCustomer": "Maamila liqii qabu filadhu"
   },
   "paymentMethods": {
     "cash": "Maallaqa",
@@ -456,7 +463,9 @@
     "deactivateTitle": "Maamilaa cufi",
     "confirmDeactivate": "{{name}} cufuu? Seenaa gurgurtaa ni eegama.",
     "deactivated": "{{name}} cufameera.",
-    "errDeactivate": "Maamilaa cufuun hin danda'amne."
+    "errDeactivate": "Maamilaa cufuun hin danda'amne.",
+    "totalCreditCustomers": "Maamiltoota liqii qaban",
+    "thOutstanding": "Liqii hafaa"
   },
   "expenses": {
     "eyebrow": "IDDOO HOJII DALDALAA KEE",
