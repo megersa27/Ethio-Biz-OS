@@ -12,7 +12,7 @@ async function startServer() {
 
     // Start the Express server only after DB connection succeeds
     app.listen(PORT, () => {
-      console.log(`EthioBiz OS API running on port ${PORT}`);
+      console.log(`EthioBiz MS API running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error.message);

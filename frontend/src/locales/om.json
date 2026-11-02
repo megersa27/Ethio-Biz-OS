@@ -36,7 +36,7 @@
   },
   "help": {
     "eyebrow": "KUUSAA GARGAARSAA",
-    "title": "EthioBiz OS gargaarsa",
+    "title": "EthioBiz MS gargaarsa",
     "subtitle": "Iddoo hojii kee haala gaariin fayyadamtuuf qajeelfamaariin salpha'aa.",
     "gettingStarted": "Jalqabummaa",
     "workspaceTips": "Qajeelfama iddoo hojii",
@@ -118,7 +118,7 @@
     "submitCreate": "Herrega daldalaa uumi",
     "submitLogin": "EthioBiz keessi seeni",
     "privacyNote": "Daataa daldalaa kee herrega sirriitti qabatameen qabiyyee daldalaa kee fayyadama.",
-    "copyright": "© {{year}} EthioBiz OS",
+    "copyright": "© {{year}} EthioBiz MS",
     "errEmailOrPhone": "Teessoo imeelii ykn lakkoofsa bilbilaa galchi.",
     "errPasswordLen": "Jecha iccittiin qubeewwan 12 of keessaa qabaachuu qaba.",
     "errGeneric": "Waanti dogoggora ta'e raawwate. Irri yaali.",
@@ -149,7 +149,7 @@
     "profitNote": "bu'aa gurgurtaa baasii hir'isu",
     "creditOutstanding": "Liqi hafan",
     "outstandingSalesNote": "Gurgurtaa liqi hafan {{count}}",
-    "footer": "EthioBiz OS · Hubannoo daldalaa salphate · Galmeewwan daldalaa kallatii",
+    "footer": "EthioBiz MS · Hubannoo daldalaa salphate · Galmeewwan daldalaa kallatii",
     "periodToday": "Har'a",
     "periodWeek": "Torban kanaa",
     "periodYear": "Waggaa kanaa"

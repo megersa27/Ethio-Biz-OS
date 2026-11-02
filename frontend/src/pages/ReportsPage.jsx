@@ -79,7 +79,7 @@ export default function ReportsPage({ token }) {
   const exportCsv = () => {
     if (!summary || !sales || !expenses || !profit || !stock) return;
     const rows = [
-      ['EthioBiz OS - Business Reports'],
+      ['EthioBiz MS - Business Reports'],
       ['Start date', startDate || 'All'],
       ['End date', endDate || 'All'],
       [],

@@ -1,6 +1,6 @@
-# EthioBiz OS — Backend API
+# EthioBiz MS — Backend API
 
-EthioBiz OS is a backend system for managing small-business operations,
+EthioBiz MS is a backend system for managing small-business operations,
 including products, inventory, sales, customer credit, payments and reports.
 
 ## Table of Contents
@@ -59,11 +59,11 @@ Do not commit `.env` or publish database credentials or JWT secrets.
 
 The example environment file defines:
 
-| Variable | Purpose |
-|---|---|
-| `PORT` | HTTP server port; example value: `5000` |
-| `MONGODB_URI` | MongoDB connection string |
-| `JWT_SECRET` | Secret used to sign authentication tokens |
+| Variable      | Purpose                                   |
+| ------------- | ----------------------------------------- |
+| `PORT`        | HTTP server port; example value: `5000`   |
+| `MONGODB_URI` | MongoDB connection string                 |
+| `JWT_SECRET`  | Secret used to sign authentication tokens |
 
 ## Running the Server
 
@@ -163,27 +163,27 @@ Except for health, registration and login, authentication is required.
 
 ### Health
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/api/health` | Health check |
+| Method | Endpoint      | Purpose      |
+| ------ | ------------- | ------------ |
+| GET    | `/api/health` | Health check |
 
 ### Authentication
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/api/auth/register` | Register a business and owner |
-| POST | `/api/auth/login` | Authenticate and receive an access token |
-| GET | `/api/auth/me` | Get the authenticated user |
+| Method | Endpoint             | Purpose                                  |
+| ------ | -------------------- | ---------------------------------------- |
+| POST   | `/api/auth/register` | Register a business and owner            |
+| POST   | `/api/auth/login`    | Authenticate and receive an access token |
+| GET    | `/api/auth/me`       | Get the authenticated user               |
 
 ### Products
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/api/products` | Create a product |
-| GET | `/api/products` | List active products |
-| GET | `/api/products/:productId` | Get one product |
-| PATCH | `/api/products/:productId` | Update allowed product fields |
-| DELETE | `/api/products/:productId` | Deactivate a product |
+| Method | Endpoint                   | Purpose                       |
+| ------ | -------------------------- | ----------------------------- |
+| POST   | `/api/products`            | Create a product              |
+| GET    | `/api/products`            | List active products          |
+| GET    | `/api/products/:productId` | Get one product               |
+| PATCH  | `/api/products/:productId` | Update allowed product fields |
+| DELETE | `/api/products/:productId` | Deactivate a product          |
 
 Example product request:
 
@@ -208,10 +208,10 @@ sales, not through the product update endpoint.
 
 ### Customers
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/api/customers` | Create a customer |
-| GET | `/api/customers` | List active customers |
+| Method | Endpoint         | Purpose               |
+| ------ | ---------------- | --------------------- |
+| POST   | `/api/customers` | Create a customer     |
+| GET    | `/api/customers` | List active customers |
 
 Example customer request:
 
@@ -230,14 +230,14 @@ optional.
 
 ### Sales
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/api/sales` | Create a sale |
-| GET | `/api/sales` | List sales with pagination and date filters |
-| GET | `/api/sales/:saleId` | Get a sale |
-| POST | `/api/sales/:saleId/payments` | Record an additional payment |
-| POST | `/api/sales/:saleId/cancel` | Cancel a completed sale |
-| POST | `/api/sales/:saleId/refunds` | Record a refund for a cancelled sale |
+| Method | Endpoint                      | Purpose                                     |
+| ------ | ----------------------------- | ------------------------------------------- |
+| POST   | `/api/sales`                  | Create a sale                               |
+| GET    | `/api/sales`                  | List sales with pagination and date filters |
+| GET    | `/api/sales/:saleId`          | Get a sale                                  |
+| POST   | `/api/sales/:saleId/payments` | Record an additional payment                |
+| POST   | `/api/sales/:saleId/cancel`   | Cancel a completed sale                     |
+| POST   | `/api/sales/:saleId/refunds`  | Record a refund for a cancelled sale        |
 
 Create a sale:
 
@@ -329,10 +329,10 @@ size is `100`.
 
 ### Inventory
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/api/inventory/movements` | Record a manual stock movement |
-| GET | `/api/inventory/movements` | List inventory movement history |
+| Method | Endpoint                   | Purpose                         |
+| ------ | -------------------------- | ------------------------------- |
+| POST   | `/api/inventory/movements` | Record a manual stock movement  |
+| GET    | `/api/inventory/movements` | List inventory movement history |
 
 Example inventory movement:
 
@@ -372,9 +372,9 @@ The default page is `1`; the default limit is `20`; the maximum limit is
 
 ### Reports
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/api/reports/sales` | Get the sales report |
+| Method | Endpoint             | Purpose              |
+| ------ | -------------------- | -------------------- |
+| GET    | `/api/reports/sales` | Get the sales report |
 
 Example:
 
@@ -418,14 +418,14 @@ Errors use a response structure similar to:
 
 Common HTTP status codes include:
 
-| Status | Meaning |
-|---|---|
-| 400 | Invalid input or unsupported fields |
-| 401 | Missing or invalid authentication, or invalid user context |
-| 403 | Forbidden or invalid business context |
-| 404 | Resource not found in the current business |
-| 409 | Conflict, such as insufficient stock or an already-paid sale |
-| 500 | Unexpected server error |
+| Status | Meaning                                                      |
+| ------ | ------------------------------------------------------------ |
+| 400    | Invalid input or unsupported fields                          |
+| 401    | Missing or invalid authentication, or invalid user context   |
+| 403    | Forbidden or invalid business context                        |
+| 404    | Resource not found in the current business                   |
+| 409    | Conflict, such as insufficient stock or an already-paid sale |
+| 500    | Unexpected server error                                      |
 
 The exact status and message depend on the endpoint and error handler.
 

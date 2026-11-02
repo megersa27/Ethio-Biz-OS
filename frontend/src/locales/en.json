@@ -36,7 +36,7 @@
   },
   "help": {
     "eyebrow": "HELP CENTER",
-    "title": "EthioBiz OS help",
+    "title": "EthioBiz MS help",
     "subtitle": "Quick guidance for running your workspace efficiently.",
     "gettingStarted": "Getting started",
     "workspaceTips": "Workspace tips",
@@ -118,7 +118,7 @@
     "submitCreate": "Create business account",
     "submitLogin": "Sign in to EthioBiz",
     "privacyNote": "Your business data is accessed through your authenticated account.",
-    "copyright": "© {{year}} EthioBiz OS",
+    "copyright": "© {{year}} EthioBiz MS",
     "errEmailOrPhone": "Please enter an email address or phone number.",
     "errPasswordLen": "Your password must contain at least 12 characters.",
     "errGeneric": "Something went wrong. Please try again.",
@@ -149,7 +149,7 @@
     "profitNote": "sales profit minus expenses",
     "creditOutstanding": "Credit outstanding",
     "outstandingSalesNote": "{{count}} outstanding sales",
-    "footer": "EthioBiz OS · Business insights made simple · Live business records",
+    "footer": "EthioBiz MS · Business insights made simple · Live business records",
     "periodToday": "Today",
     "periodWeek": "This week",
     "periodYear": "This year"

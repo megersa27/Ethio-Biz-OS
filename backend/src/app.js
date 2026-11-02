@@ -16,7 +16,7 @@ app.use(express.json({ limit: "10kb" }));
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "EthioBiz OS API is running",
+    message: "EthioBiz MS API is running",
   });
 });
 

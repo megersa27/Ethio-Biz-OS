@@ -6,7 +6,6 @@ import {
   Eye,
   EyeOff,
   MoonStar,
-  ShieldCheck,
   SunMedium,
 } from 'lucide-react';
 
@@ -130,7 +129,7 @@ export default function AuthPage({ onLogin }) {
           </span>
 
           <span className="auth-brand-name">
-            EthioBiz <strong>OS</strong>
+            EthioBiz <strong>MS</strong>
           </span>
         </div>
 
@@ -148,19 +147,6 @@ export default function AuthPage({ onLogin }) {
           <p>
             {t('auth.lead')}
           </p>
-
-          <div className="auth-benefit">
-            <span className="auth-benefit-icon">
-              <ShieldCheck size={20} />
-            </span>
-
-            <div>
-              <strong>{t('auth.benefitTitle')}</strong>
-              <span>
-                {t('auth.benefitBody')}
-              </span>
-            </div>
-          </div>
         </div>
 
         <p className="auth-story-footer">

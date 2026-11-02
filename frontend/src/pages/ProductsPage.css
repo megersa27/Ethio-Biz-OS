@@ -314,6 +314,140 @@
   min-height: 40px;
 }
 
+:root[data-theme='dark'] .nav-item.active {
+  color: var(--green-strong);
+  background: var(--green-light);
+}
+
+:root[data-theme='dark'] .nav-item:hover {
+  color: var(--green-strong);
+}
+
+:root[data-theme='dark'] .products-summary {
+  background: linear-gradient(135deg, rgba(105, 224, 163, 0.08), rgba(24, 36, 45, 0.96));
+  border-color: rgba(105, 224, 163, 0.2);
+  box-shadow: none;
+}
+
+:root[data-theme='dark'] .products-summary-icon {
+  color: var(--green-strong);
+  background: rgba(105, 224, 163, 0.14);
+}
+
+:root[data-theme='dark'] .products-summary > div:nth-child(2) strong,
+:root[data-theme='dark'] .products-summary > div:nth-child(2) span,
+:root[data-theme='dark'] .products-search input,
+:root[data-theme='dark'] .products-search button,
+:root[data-theme='dark'] .products-modal-header h2,
+:root[data-theme='dark'] .products-modal-header p,
+:root[data-theme='dark'] .products-form > label,
+:root[data-theme='dark'] .products-form-grid > label,
+:root[data-theme='dark'] .products-empty,
+:root[data-theme='dark'] .products-table-footer,
+:root[data-theme='dark'] .products-message,
+:root[data-theme='dark'] .products-form-note,
+:root[data-theme='dark'] .table-primary {
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .products-panel {
+  background: linear-gradient(180deg, rgba(24, 36, 45, 0.98), rgba(17, 23, 29, 0.96));
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+:root[data-theme='dark'] .products-search {
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .products-search:focus-within {
+  border-color: rgba(105, 224, 163, 0.7);
+  box-shadow: 0 0 0 4px rgba(105, 224, 163, 0.12);
+}
+
+:root[data-theme='dark'] .products-table thead th {
+  background: rgba(34, 52, 61, 0.9);
+  color: var(--muted);
+}
+
+:root[data-theme='dark'] .products-table tbody td,
+:root[data-theme='dark'] .products-table tbody tr:hover td,
+:root[data-theme='dark'] .products-table tbody tr:nth-child(even) td {
+  background: transparent;
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .products-table tbody tr:hover td {
+  background: rgba(105, 224, 163, 0.04);
+}
+
+:root[data-theme='dark'] .product-action-button {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+:root[data-theme='dark'] .product-action-button:hover:not(:disabled) {
+  background: rgba(105, 224, 163, 0.1);
+  border-color: rgba(105, 224, 163, 0.28);
+  color: var(--green-strong);
+}
+
+:root[data-theme='dark'] .product-stock-badge.good {
+  background: rgba(105, 224, 163, 0.12);
+  border-color: rgba(105, 224, 163, 0.2);
+  color: var(--green-strong);
+}
+
+:root[data-theme='dark'] .product-stock-badge.low {
+  background: rgba(255, 169, 108, 0.12);
+  border-color: rgba(255, 169, 108, 0.2);
+  color: #f7c37d;
+}
+
+:root[data-theme='dark'] .products-message-success {
+  background: rgba(105, 224, 163, 0.08);
+  border-color: rgba(105, 224, 163, 0.24);
+  color: var(--green-strong);
+}
+
+:root[data-theme='dark'] .products-message-error {
+  background: rgba(255, 122, 122, 0.08);
+  border-color: rgba(255, 122, 122, 0.24);
+  color: #ffb2b2;
+}
+
+:root[data-theme='dark'] .products-modal {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+:root[data-theme='dark'] .products-form input,
+:root[data-theme='dark'] .products-form select {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+:root[data-theme='dark'] .products-form input::placeholder,
+:root[data-theme='dark'] .products-form select::placeholder {
+  color: var(--muted);
+}
+
+:root[data-theme='dark'] .products-form input:focus,
+:root[data-theme='dark'] .products-form select:focus {
+  border-color: rgba(105, 224, 163, 0.7);
+  box-shadow: 0 0 0 4px rgba(105, 224, 163, 0.12);
+}
+
+:root[data-theme='dark'] .products-form-note {
+  background: rgba(105, 224, 163, 0.08);
+  border-color: rgba(105, 224, 163, 0.18);
+  color: var(--muted);
+}
+
 @media (max-width: 600px) {
   .products-toolbar {
     align-items: flex-start;

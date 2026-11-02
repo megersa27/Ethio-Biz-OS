@@ -36,7 +36,7 @@
   },
   "help": {
     "eyebrow": "የእርዳታ ማዕከል",
-    "title": "EthioBiz OS እርዳታ",
+    "title": "EthioBiz MS እርዳታ",
     "subtitle": "የስራ ቦታዎን በብቃት ለመጠቀም ፈጣኑ መመሪያ።",
     "gettingStarted": "መጀመሪያ",
     "workspaceTips": "የስራ ቦታ ምክሮች",
@@ -118,7 +118,7 @@
     "submitCreate": "የንግድ መለያ ይፍጠሩ",
     "submitLogin": "ወደ EthioBiz ይግቡ",
     "privacyNote": "የንግድዎ መረጃ በተረጋገጠ መለያዎ ይደርሳል።",
-    "copyright": "© {{year}} EthioBiz OS",
+    "copyright": "© {{year}} EthioBiz MS",
     "errEmailOrPhone": "እባክዎ የኢሜል አድራሻ ወይም የስልክ ቁጥር ያስገቡ።",
     "errPasswordLen": "የይለፍ ቃልዎ ቢያንስ 12 ቁምፎች መኖር አለበት።",
     "errGeneric": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
@@ -149,7 +149,7 @@
     "profitNote": "የሽያጭ ትርፍ ወጪ ካለ",
     "creditOutstanding": "ያልተከፈለ ብድር",
     "outstandingSalesNote": "{{count}} ያልተከፈሉ ሽያጭ",
-    "footer": "EthioBiz OS · የንግድ ግንዛቤ ቀላል ተደርጓል · በቀጥታ የንግድ መዝገቦች",
+    "footer": "EthioBiz MS · የንግድ ግንዛቤ ቀላል ተደርጓል · በቀጥታ የንግድ መዝገቦች",
     "periodToday": "ዛሬ",
     "periodWeek": "ይህ ሳምንት",
     "periodYear": "ይህ ዓመት"

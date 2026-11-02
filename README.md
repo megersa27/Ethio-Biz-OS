@@ -1,6 +1,6 @@
-# EthioBiz OS
+# EthioBiz MS
 
-EthioBiz OS is a smartphone-first business management system designed
+EthioBiz MS is a smartphone-first business management system designed
 to help Ethiopian small and medium-sized businesses manage their daily
 business operations.
 
@@ -61,7 +61,7 @@ Initial target businesses:
 ## Project Structure
 
 ```text
-EthioBiz OS - Fullstack/
+EthioBiz MS - Fullstack/
 ├── backend/
 ├── frontend/
 ├── doc/
