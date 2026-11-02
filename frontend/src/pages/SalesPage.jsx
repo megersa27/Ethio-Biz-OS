@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import {
+  createCustomer,
   createSale,
   getCustomers,
   getProducts,
@@ -158,6 +159,13 @@ export default function SalesPage({ token }) {
   const [openProductIndex, setOpenProductIndex] = useState(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const [newCustomerOpen, setNewCustomerOpen] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
+  const [newCustomerAddress, setNewCustomerAddress] = useState('');
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [customerCreateError, setCustomerCreateError] = useState('');
+
   const [customerId, setCustomerId] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('full');
@@ -335,12 +343,92 @@ export default function SalesPage({ token }) {
     setCustomerId('');
     setCustomerSearch('');
     setCustomerDropdownOpen(false);
+    setNewCustomerOpen(false);
+    setNewCustomerName('');
+    setNewCustomerPhone('');
+    setNewCustomerAddress('');
+    setCustomerCreateError('');
+
     setOpenProductIndex(null);
     setPaymentMode('full');
     setPaidAmount('');
     setPaymentMethod('cash');
     setPaymentReference('');
     setNotes('');
+  }
+
+  async function handleQuickCustomerCreate() {
+    setCustomerCreateError('');
+
+    const name = newCustomerName.trim();
+    const phone = newCustomerPhone.trim();
+    const address = newCustomerAddress.trim();
+
+    if (!name) return;
+
+    // Reuse an existing customer instead of creating a duplicate.
+    const existing = customers.find(
+      (customer) =>
+        String(customer.name || '').trim().toLowerCase() === name.toLowerCase() &&
+        String(customer.phone || '').trim() === phone
+    );
+
+    if (existing) {
+      setCustomerId(String(existing._id));
+      setCustomerSearch(existing.name);
+      setNewCustomerOpen(false);
+      setNewCustomerName('');
+      setNewCustomerPhone('');
+      setNewCustomerAddress('');
+      setNotice(t('sales.customerAlreadyExists'));
+      return;
+    }
+
+    setCreatingCustomer(true);
+
+    try {
+      const result = await createCustomer(token, { name, phone, address });
+
+      // Reload saved customers so the new customer is immediately selectable.
+      const refreshed = await getCustomers(token);
+      const rows = refreshed.customers || [];
+      setCustomers(rows);
+
+      const returnedCustomer =
+        result?.customer ||
+        result?.data?.customer ||
+        result?.data ||
+        result;
+
+      const savedCustomer = rows.find(
+        (customer) =>
+          String(customer._id) ===
+          String(returnedCustomer?._id || returnedCustomer?.id || '')
+      ) || [...rows].reverse().find(
+        (customer) =>
+          String(customer.name || '').trim().toLowerCase() === name.toLowerCase() &&
+          String(customer.phone || '').trim() === phone
+      );
+
+      if (!savedCustomer) {
+        throw new Error(t('sales.customerReloadError'));
+      }
+
+      setCustomerId(String(savedCustomer._id));
+      setCustomerSearch(savedCustomer.name);
+      setCustomerDropdownOpen(false);
+      setNewCustomerOpen(false);
+      setNewCustomerName('');
+      setNewCustomerPhone('');
+      setNewCustomerAddress('');
+      setNotice(t('sales.customerSaved'));
+    } catch (error) {
+      setCustomerCreateError(
+        error.message || t('sales.customerCreateError')
+      );
+    } finally {
+      setCreatingCustomer(false);
+    }
   }
 
   async function handleCreateSale(event) {
@@ -845,27 +933,13 @@ export default function SalesPage({ token }) {
                       setCustomerId('');
                       setCustomerDropdownOpen(true);
                     }}
-                    placeholder={t('sales.walkIn')}
+                    placeholder={t('sales.selectCreditCustomer')}
                     autoComplete="off"
                     disabled={saving}
                   />
 
                   {customerDropdownOpen && (
                     <div className="sales-product-options" role="listbox">
-                      <button
-                        type="button"
-                        className="sales-product-option"
-                        role="option"
-                        aria-selected={!customerId}
-                        onClick={() => {
-                          setCustomerId('');
-                          setCustomerSearch('');
-                          setCustomerDropdownOpen(false);
-                        }}
-                        disabled={saving}
-                      >
-                        <span>{t('sales.walkIn')}</span>
-                      </button>
 
                       {customers
                         .filter((customer) => {
@@ -900,6 +974,98 @@ export default function SalesPage({ token }) {
                     </div>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  className="sales-add-customer"
+                  onClick={() => {
+                    setNewCustomerOpen((value) => !value);
+                    setCustomerDropdownOpen(false);
+                    setCustomerCreateError('');
+                  }}
+                  disabled={saving || creatingCustomer}
+                >
+                  <Plus size={15} />
+                  {t('sales.addNewCustomer')}
+                </button>
+
+                {newCustomerOpen && (
+                  <div className="sales-new-customer-form">
+                    <label>
+                      {t('customers.thCustomer')}
+                      <input
+                        type="text"
+                        value={newCustomerName}
+                        onChange={(event) => setNewCustomerName(event.target.value)}
+                        maxLength={150}
+                        required
+                        autoComplete="name"
+                        placeholder={t('customers.thCustomer')}
+                        disabled={creatingCustomer}
+                      />
+                    </label>
+
+                    <label>
+                      {t('customers.thPhone')}
+                      <input
+                        type="tel"
+                        value={newCustomerPhone}
+                        onChange={(event) => setNewCustomerPhone(event.target.value)}
+                        maxLength={30}
+                        autoComplete="tel"
+                        placeholder={t('customers.thPhone')}
+                        disabled={creatingCustomer}
+                      />
+                    </label>
+
+                    <label>
+                      {t('customers.thAddress')}
+                      <input
+                        type="text"
+                        value={newCustomerAddress}
+                        onChange={(event) => setNewCustomerAddress(event.target.value)}
+                        maxLength={300}
+                        autoComplete="street-address"
+                        placeholder={t('customers.thAddress')}
+                        disabled={creatingCustomer}
+                      />
+                    </label>
+
+                    {customerCreateError && (
+                      <div className="sales-alert sales-alert-error" role="alert">
+                        {customerCreateError}
+                      </div>
+                    )}
+
+                    <div className="sales-new-customer-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          setNewCustomerOpen(false);
+                          setNewCustomerName('');
+                          setNewCustomerPhone('');
+                          setNewCustomerAddress('');
+                          setCustomerCreateError('');
+                        }}
+                        disabled={creatingCustomer}
+                      >
+                        {t('common.cancel')}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={handleQuickCustomerCreate}
+                        disabled={creatingCustomer || !newCustomerName.trim()}
+                      >
+                        {creatingCustomer
+                          ? t('common.saving')
+                          : t('sales.saveCustomer')}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <span className="sales-field-help">
                   {t('sales.customerRequired')}

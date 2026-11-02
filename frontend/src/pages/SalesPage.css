@@ -791,3 +791,53 @@
   box-sizing: border-box;
   width: 100%;
 }
+
+
+.sales-add-customer {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 7px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sales-new-customer-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.sales-new-customer-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-primary, var(--text));
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.sales-new-customer-form input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 11px;
+  color: var(--text);
+  background: var(--input-bg, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.sales-new-customer-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px;
+}
