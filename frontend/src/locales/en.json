@@ -455,6 +455,7 @@
     "thPhone": "Phone",
     "thEmail": "Email",
     "thAddress": "Address",
+    "thLastPayment": "Last payment",
     "thNotes": "Notes",
     "thActions": "Actions",
     "noMatch": "No customers match your search.",
