@@ -1312,27 +1312,26 @@ export default function SalesPage({ token }) {
                 <th>{t('sales.thPaid')}</th>
                 <th>{t('sales.thBalance')}</th>
                 <th>{t('sales.thStatus')}</th>
-                <th>{t('sales.thAction')}</th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="sales-table-empty">
+                  <td colSpan={8} className="sales-table-empty">
                     {t('sales.loadingSales')}
                   </td>
                 </tr>
               ) : sales.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="sales-table-empty">
+                  <td colSpan={8} className="sales-table-empty">
                     {t('sales.noSales')}
                   </td>
                 </tr>
               ) : (
                 groupedSales.flatMap((group) => [
                   <tr key={`${group.key}-header`} className="sales-day-header-row">
-                    <td colSpan={9} className="sales-day-header-cell">
+                    <td colSpan={8} className="sales-day-header-cell">
                       <div className="sales-day-header-content">
                         <span>{t(group.label)}</span>
                         <small>{group.sales.length}</small>
@@ -1358,19 +1357,6 @@ export default function SalesPage({ token }) {
                         <span className={`sales-status sales-status-${getPaymentStatus(sale)}`}>
                           {getPaymentLabel(sale, t)}
                         </span>
-                      </td>
-                      <td>
-                        {sale.saleStatus !== 'CANCELLED' &&
-                          Number(sale.balanceDueMinor || 0) > 0 && (
-                            <button
-                              type="button"
-                              className="sales-payment-button"
-                              onClick={() => openPaymentForm(sale)}
-                              disabled={saving}
-                            >
-                              {t('sales.addPayment')}
-                            </button>
-                          )}
                       </td>
                     </tr>
                   )),
