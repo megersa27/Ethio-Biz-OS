@@ -40,6 +40,7 @@ function serializeProfile(user, business) {
       name: user.name,
       email: user.email || "",
       phone: user.phone || "",
+      photo: user.photo || "",
       role: user.role,
     },
     business: {
@@ -96,6 +97,7 @@ async function updateSettingsProfile({ userId, tenantId, role, input }) {
   const newUserName = requiredText(userInput.name, user.name, "Name", 100);
   const newEmail = optionalText(userInput.email, user.email, "Email", 254).toLowerCase();
   const newPhone = optionalText(userInput.phone, user.phone, "Phone number", 30);
+  const newPhoto = optionalText(userInput.photo, user.photo, "Profile photo", 5000000);
 
   if (newEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
     throw createError("Please provide a valid email address", 400);
@@ -141,6 +143,7 @@ async function updateSettingsProfile({ userId, tenantId, role, input }) {
   user.name = newUserName;
   user.email = newEmail || null;
   user.phone = newPhone || null;
+  user.photo = newPhoto || null;
 
   business.name = newBusinessName;
   business.phone = newBusinessPhone;

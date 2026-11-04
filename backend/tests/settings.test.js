@@ -147,6 +147,7 @@ test("settings profiles are secure, update correctly, and remain tenant-scoped",
   );
 
   // Owner A can update their profile and business details.
+  const photoDataUrl = "data:image/png;base64,AAAA";
   const updateA = await request("/api/settings/profile", {
     method: "PUT",
     token: tokenA,
@@ -155,6 +156,7 @@ test("settings profiles are secure, update correctly, and remain tenant-scoped",
         name: "Updated Settings Owner A",
         email: `updated-a-${uniqueId}@example.com`,
         phone: `+2519${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 10)}`,
+        photo: photoDataUrl,
       },
       business: {
         name: "Updated Settings Business A",
@@ -173,9 +175,29 @@ test("settings profiles are secure, update correctly, and remain tenant-scoped",
   );
 
   assert.equal(updateA.body.data.profile.user.name, "Updated Settings Owner A");
+  assert.equal(updateA.body.data.profile.user.photo, photoDataUrl);
   assert.equal(updateA.body.data.profile.business.name, "Updated Settings Business A");
   assert.equal(updateA.body.data.profile.business.id, businessAId);
   assert.equal(updateA.body.data.profile.business.address, "Adama, Ethiopia");
+
+  const largePhotoDataUrl = `data:image/png;base64,${"A".repeat(120000)}`;
+  const largePhotoUpdate = await request("/api/settings/profile", {
+    method: "PUT",
+    token: tokenA,
+    body: {
+      user: {
+        name: "Updated Settings Owner A",
+        photo: largePhotoDataUrl,
+      },
+    },
+  });
+
+  assert.equal(
+    largePhotoUpdate.status,
+    200,
+    `Large photo update failed: ${largePhotoUpdate.body.message}`
+  );
+  assert.equal(largePhotoUpdate.body.data.profile.user.photo, largePhotoDataUrl);
 
   // Business B must remain unchanged.
   const profileBAfter = await request("/api/settings/profile", {

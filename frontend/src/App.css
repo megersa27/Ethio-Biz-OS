@@ -1311,11 +1311,20 @@
   color: #176b4d;
   font-size: 11px;
   font-weight: 800;
+  overflow: hidden;
 }
 
 .top-profile-button .top-avatar {
   width: 40px;
   height: 40px;
+}
+
+.avatar-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .profile-chevron {

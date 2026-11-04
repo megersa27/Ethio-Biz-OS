@@ -285,6 +285,7 @@ export default function App() {
           onOpenMenu={() => setIsSidebarOpen(true)}
           onNavigate={setActivePage}
           userName={auth.user?.name}
+          userPhoto={auth.user?.photo}
           businessName={auth.business?.name}
           onSettings={() => setActivePage('Settings')}
           onLogout={logout}

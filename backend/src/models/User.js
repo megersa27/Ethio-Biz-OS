@@ -44,6 +44,13 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    photo: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: [5000000, "Profile photo is too large"],
+    },
+
     role: {
       type: String,
       enum: ["OWNER", "STAFF"],

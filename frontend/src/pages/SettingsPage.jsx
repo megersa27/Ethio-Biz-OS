@@ -16,6 +16,7 @@ const emptyForm = {
   ownerName: '',
   email: '',
   ownerPhone: '',
+  photo: '',
 };
 
 export default function SettingsPage({ token, onProfileUpdated }) {
@@ -43,6 +44,7 @@ export default function SettingsPage({ token, onProfileUpdated }) {
         ownerName: current.user.name || '',
         email: current.user.email || '',
         ownerPhone: current.user.phone || '',
+        photo: current.user.photo || '',
       });
     } catch (err) {
       setError(err.message || t('settings.errLoad'));
@@ -58,6 +60,24 @@ export default function SettingsPage({ token, onProfileUpdated }) {
     setNotice('');
   };
 
+  const handlePhotoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose a valid image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((current) => ({ ...current, photo: String(reader.result || '') }));
+      setError('');
+      setNotice('');
+    };
+    reader.readAsDataURL(file);
+  };
+
   async function handleSubmit(event) {
     event.preventDefault();
     setSaving(true);
@@ -69,6 +89,7 @@ export default function SettingsPage({ token, onProfileUpdated }) {
         name: form.ownerName,
         email: form.email,
         phone: form.ownerPhone,
+        photo: form.photo || '',
       },
     };
 
@@ -90,6 +111,7 @@ export default function SettingsPage({ token, onProfileUpdated }) {
         ownerName: result.profile.user.name || '',
         email: result.profile.user.email || '',
         ownerPhone: result.profile.user.phone || '',
+        photo: result.profile.user.photo || '',
       });
       if (onProfileUpdated) onProfileUpdated(result.profile);
       setNotice(t('settings.saved'));
@@ -176,6 +198,51 @@ export default function SettingsPage({ token, onProfileUpdated }) {
 
         <section className="settings-card">
           <div className="settings-card-heading">
+            <div className="settings-icon"><UserRound size={20} /></div>
+            <div><h2>{t('settings.personalProfile')}</h2>
+              <p>{t('settings.personalLead')}</p></div>
+          </div>
+
+          <div className="settings-photo-row">
+            <div className="settings-photo-preview">
+              {form.photo ? (
+                <img src={form.photo} alt="Profile" className="settings-photo-image" />
+              ) : (
+                <UserRound size={28} />
+              )}
+            </div>
+
+            <label className="settings-photo-picker">
+              <input type="file" accept="image/*" onChange={handlePhotoChange} />
+              <span>{form.photo ? 'Change photo' : 'Upload photo'}</span>
+            </label>
+          </div>
+
+          <div className="settings-fields" style={{ marginTop: '18px' }}>
+            <label className="settings-field settings-wide">
+              <span>{t('settings.name')}</span>
+              <input required maxLength={100} value={form.ownerName}
+                onChange={change('ownerName')} />
+            </label>
+            <label className="settings-field">
+              <span>{t('settings.emailAddress')}</span>
+              <input type="email" maxLength={254} value={form.email}
+                onChange={change('email')} placeholder={t('settings.emailPh')} />
+            </label>
+            <label className="settings-field">
+              <span>{t('settings.personalPhone')}</span>
+              <input maxLength={30} value={form.ownerPhone}
+                onChange={change('ownerPhone')} placeholder={t('settings.phonePh')} />
+            </label>
+          </div>
+          <p className="settings-hint">{t('settings.hint')}</p>
+          <div className="settings-account-meta">
+            <span>{t('settings.accountRole')}</span><strong>{profile.user.role}</strong>
+          </div>
+        </section>
+
+        <section className="settings-card">
+          <div className="settings-card-heading">
             <div className="settings-icon"><Building2 size={20} /></div>
             <div><h2>{t('settings.businessProfile')}</h2>
               <p>{t('settings.businessLead')}</p></div>
@@ -203,36 +270,6 @@ export default function SettingsPage({ token, onProfileUpdated }) {
                 onChange={change('address')} disabled={!canEditBusiness}
                 placeholder={t('settings.businessAddressPh')} />
             </label>
-          </div>
-        </section>
-
-        <section className="settings-card">
-          <div className="settings-card-heading">
-            <div className="settings-icon"><UserRound size={20} /></div>
-            <div><h2>{t('settings.personalProfile')}</h2>
-              <p>{t('settings.personalLead')}</p></div>
-          </div>
-
-          <div className="settings-fields">
-            <label className="settings-field settings-wide">
-              <span>{t('settings.name')}</span>
-              <input required maxLength={100} value={form.ownerName}
-                onChange={change('ownerName')} />
-            </label>
-            <label className="settings-field">
-              <span>{t('settings.emailAddress')}</span>
-              <input type="email" maxLength={254} value={form.email}
-                onChange={change('email')} placeholder={t('settings.emailPh')} />
-            </label>
-            <label className="settings-field">
-              <span>{t('settings.personalPhone')}</span>
-              <input maxLength={30} value={form.ownerPhone}
-                onChange={change('ownerPhone')} placeholder={t('settings.phonePh')} />
-            </label>
-          </div>
-          <p className="settings-hint">{t('settings.hint')}</p>
-          <div className="settings-account-meta">
-            <span>{t('settings.accountRole')}</span><strong>{profile.user.role}</strong>
           </div>
         </section>
 

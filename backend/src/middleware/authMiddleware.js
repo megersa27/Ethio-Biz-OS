@@ -61,6 +61,7 @@ async function authenticate(req, res, next) {
       id: user._id.toString(),
       businessId: user.businessId.toString(),
       role: user.role,
+      photo: user.photo || "",
     };
 
     next();

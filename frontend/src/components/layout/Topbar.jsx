@@ -24,6 +24,7 @@ export default function Topbar({
   businessName,
   onSettings,
   onLogout,
+  userPhoto = '',
   lowStockItems = [],
   outstandingCreditMinor = 0,
   outstandingSaleCount = 0,
@@ -169,14 +170,26 @@ export default function Topbar({
             aria-label={t('topbar.openProfile')}
             aria-expanded={profileOpen}
           >
-            <span className="avatar top-avatar">{initials}</span>
+            <span className="avatar top-avatar">
+              {userPhoto ? (
+                <img src={userPhoto} alt={userName || fallbackName} className="avatar-image" />
+              ) : (
+                initials
+              )}
+            </span>
             <ChevronDown size={13} className="profile-chevron" />
           </button>
 
           {profileOpen && (
             <div className="topbar-popover profile-popover">
               <div className="profile-popover-header">
-                <span className="avatar profile-popover-avatar">{initials}</span>
+                <span className="avatar profile-popover-avatar">
+                  {userPhoto ? (
+                    <img src={userPhoto} alt={userName || fallbackName} className="avatar-image" />
+                  ) : (
+                    initials
+                  )}
+                </span>
                 <span className="profile-popover-copy">
                   <strong>{userName || fallbackName}</strong>
                   <small>{businessName || t('topbar.myBusiness')}</small>

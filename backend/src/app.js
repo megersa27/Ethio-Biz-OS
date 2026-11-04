@@ -11,7 +11,8 @@ const settingsRoutes = require("./routes/settingsRoutes");
 
 const app = express();
 
-app.use(express.json({ limit: "10kb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -36,6 +37,13 @@ app.use((err, req, res, next) => {
   }
 
   const statusCode = err.statusCode || 500;
+
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({
+      success: false,
+      message: "Request payload is too large. Please upload a smaller image.",
+    });
+  }
 
   if (statusCode >= 500) {
     console.error("API error:", err.message);
