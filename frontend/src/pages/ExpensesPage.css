@@ -46,6 +46,18 @@
   white-space: nowrap;
 }
 
+.expenses-heading-actions .primary-button {
+  color: #f5fff9;
+  background: linear-gradient(135deg, var(--green), var(--green-strong));
+  border: 1px solid rgba(11, 60, 43, 0.16);
+  box-shadow: 0 8px 18px rgba(23, 107, 77, 0.2);
+}
+
+.expenses-heading-actions .primary-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--green-strong), var(--green));
+  transform: translateY(-1px);
+}
+
 .expenses-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

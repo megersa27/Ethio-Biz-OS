@@ -1,0 +1,159 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  AlertTriangle, MapPin, Search, UserRound, X,
+} from 'lucide-react';
+
+import { getSales } from '../services/api.js';
+import './CustomersPage.css';
+
+export default function CustomersPage({ token }) {
+  const { t } = useTranslation();
+  const [customers, setCustomers] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+
+      try {
+        const salesResult = await getSales(token, { page: 1, limit: 200 });
+        if (cancelled) return;
+
+        const customerMap = new Map();
+
+        (salesResult.sales || []).forEach((sale) => {
+          const balanceDueMinor = Number(sale.balanceDueMinor || 0);
+          const customerInfo = sale.customerId || sale.customer || {};
+          const customerId = customerInfo._id || sale.customerId;
+
+          if (!customerId || sale.saleStatus === 'CANCELLED' || balanceDueMinor <= 0) {
+            return;
+          }
+
+          const normalized = {
+            _id: String(customerId),
+            name: customerInfo.name || 'Customer',
+            phone: customerInfo.phone || '',
+            email: customerInfo.email || '',
+            address: customerInfo.address || '',
+            notes: customerInfo.notes || '',
+          };
+
+          const existing = customerMap.get(normalized._id);
+          if (existing) {
+            existing.name = existing.name || normalized.name;
+            existing.phone = existing.phone || normalized.phone;
+            existing.email = existing.email || normalized.email;
+            existing.address = existing.address || normalized.address;
+            existing.notes = existing.notes || normalized.notes;
+            return;
+          }
+
+          customerMap.set(normalized._id, normalized);
+        });
+
+        setCustomers([...customerMap.values()].sort((a, b) => a.name.localeCompare(b.name)));
+      } catch (err) {
+        if (!cancelled) setError(err.message || t('customers.errLoad'));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, [token, t]);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return customers;
+
+    return customers.filter((customer) =>
+      [customer.name, customer.phone, customer.email, customer.address, customer.notes]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [customers, search]);
+
+  return (
+    <section className="customers-page">
+      <div className="customers-heading">
+        <div>
+          <p className="eyebrow">{t('customers.eyebrow')}</p>
+          <h1>{t('customers.title')}</h1>
+          <p>{t('customers.lead')}</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="customers-alert customers-alert-error" role="alert">
+          <AlertTriangle size={18} /><span>{error}</span>
+        </div>
+      )}
+
+      <div className="customers-summary">
+        <article className="customers-total-card">
+          <div className="customers-total-icon"><UserRound size={25} /></div>
+          <div>
+            <p>Total credit customers</p>
+            <strong>{loading ? t('common.loadingEllipsis') : customers.length}</strong>
+          </div>
+        </article>
+      </div>
+
+      <section className="customers-panel">
+        <div className="customers-directory-heading">
+          <div><h2>{t('customers.directory')}</h2>
+            <p>{loading ? t('customers.loadingCustomers') : t('customers.shownCount', { count: filtered.length })}</p>
+          </div>
+          <label className="customers-search">
+            <Search size={17} />
+            <input type="search" value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={t('customers.searchPh')} aria-label={t('customers.searchAria')} />
+            {search && <button type="button" onClick={() => setSearch('')}
+              aria-label={t('customers.clearSearchAria')}><X size={15} /></button>}
+          </label>
+        </div>
+
+        <div className="customers-table-wrap">
+          <table className="customers-table">
+            <thead><tr>
+              <th>{t('customers.thCustomer')}</th><th>{t('customers.thPhone')}</th><th>{t('customers.thEmail')}</th>
+              <th>{t('customers.thAddress')}</th><th>{t('customers.thNotes')}</th>
+            </tr></thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} className="customers-empty">{t('customers.loadingCustomers')}</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={5} className="customers-empty">
+                  {search ? t('customers.noMatch') : t('customers.none')}
+                </td></tr>
+              ) : filtered.map((customer) => (
+                <tr key={customer._id}>
+                  <td><strong>{customer.name}</strong></td>
+                  <td>{customer.phone ?
+                    <a href={`tel:${customer.phone}`}>{customer.phone}</a> : '—'}</td>
+                  <td>{customer.email ?
+                    <a href={`mailto:${customer.email}`}>{customer.email}</a> : '—'}</td>
+                  <td>{customer.address ?
+                    <span className="customers-address"><MapPin size={13} />{customer.address}</span> : '—'}</td>
+                  <td className="customers-notes-cell">{customer.notes || '—'}</td>
+                  <td className="customers-list-status">Credit customer</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  );
+}

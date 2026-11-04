@@ -46,6 +46,20 @@ function localToday() {
     .slice(0, 10);
 }
 
+function moneyToMinor(value) {
+  const normalized = typeof value === 'string'
+    ? value.replace(/,/g, '').trim()
+    : String(value ?? '').trim();
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed)) {
+    return NaN;
+  }
+
+  return Math.round((parsed + Number.EPSILON) * 100);
+}
+
 function emptyForm() {
   return {
     category: 'Transport',
@@ -147,6 +161,27 @@ export default function ExpensesPage({ token }) {
     0
   );
 
+  const todayKey = localToday();
+
+  const todayExpenses = useMemo(
+    () =>
+      expenses.filter((expense) => {
+        if (!expense.date) return false;
+
+        const dateValue = new Date(expense.date);
+
+        if (Number.isNaN(dateValue.getTime())) return false;
+
+        return dateValue.toISOString().slice(0, 10) === todayKey;
+      }),
+    [expenses, todayKey]
+  );
+
+  const todayTotalMinor = todayExpenses.reduce(
+    (sum, expense) => sum + Number(expense.amountMinor || 0),
+    0
+  );
+
   function openCreateForm() {
     setEditingExpense(null);
     setForm(emptyForm());
@@ -207,7 +242,7 @@ export default function ExpensesPage({ token }) {
     }
 
     const amount = Number(form.amount);
-    const amountMinor = Math.round(amount * 100);
+    const amountMinor = moneyToMinor(form.amount);
 
     if (
       !Number.isFinite(amount) ||
@@ -327,18 +362,9 @@ export default function ExpensesPage({ token }) {
         <article className="expenses-summary-card">
           <div className="expenses-summary-icon"><Wallet size={20} /></div>
           <div>
-            <p>{t('expenses.totalShown')}</p>
-            <strong>{loading ? t('common.loadingEllipsis') : formatMinor(totalMinor)}</strong>
-            <span>{t('expenses.totalNote')}</span>
-          </div>
-        </article>
-
-        <article className="expenses-summary-card">
-          <div className="expenses-summary-icon"><CreditCard size={20} /></div>
-          <div>
-            <p>{t('expenses.recordsShown')}</p>
-            <strong>{loading ? t('common.loadingEllipsis') : filteredExpenses.length}</strong>
-            <span>{t('expenses.ofLoaded', { total: pagination?.totalItems ?? expenses.length })}</span>
+            <p>{t('expenses.todayTotal')}</p>
+            <strong>{loading ? t('common.loadingEllipsis') : formatMinor(todayTotalMinor)}</strong>
+            <span>{t('expenses.todayTotalNote')}</span>
           </div>
         </article>
       </div>

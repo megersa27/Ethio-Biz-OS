@@ -22,6 +22,40 @@ const today = () => {
   return `${year}-${month}-${day}`;
 };
 
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getPeriodRange(period) {
+  const now = new Date();
+  const endDate = today();
+
+  if (period === 'today') {
+    return { startDate: endDate, endDate };
+  }
+
+  if (period === 'week') {
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - 6);
+    return { startDate: localDateKey(startDate), endDate };
+  }
+
+  if (period === 'month') {
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { startDate: localDateKey(startDate), endDate };
+  }
+
+  if (period === 'year') {
+    const startDate = new Date(now.getFullYear(), 0, 1);
+    return { startDate: localDateKey(startDate), endDate };
+  }
+
+  return { startDate: '', endDate };
+}
+
 function Metric({ label, value, icon: Icon, tone = '' }) {
   return (
     <article className={`report-metric ${tone}`}>
@@ -33,10 +67,38 @@ function Metric({ label, value, icon: Icon, tone = '' }) {
   );
 }
 
+const REPORT_DATE_RANGE_KEY = 'ethiobiz-reports-date-range';
+
+const readSavedDateRange = () => {
+  try {
+    const saved = localStorage.getItem(REPORT_DATE_RANGE_KEY);
+    if (!saved) {
+      return {
+        startDate: getPeriodRange('today').startDate,
+        endDate: getPeriodRange('today').endDate,
+      };
+    }
+
+    const parsed = JSON.parse(saved);
+    if (parsed?.startDate && parsed?.endDate) {
+      return { startDate: parsed.startDate, endDate: parsed.endDate };
+    }
+  } catch (error) {
+    console.warn('Failed to restore saved report date range:', error);
+  }
+
+  return {
+    startDate: getPeriodRange('today').startDate,
+    endDate: getPeriodRange('today').endDate,
+  };
+};
+
 export default function ReportsPage({ token }) {
   const { t } = useTranslation();
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState(today());
+  const [timeRange, setTimeRange] = useState('today');
+  const savedDateRange = readSavedDateRange();
+  const [startDate, setStartDate] = useState(savedDateRange.startDate);
+  const [endDate, setEndDate] = useState(savedDateRange.endDate);
   const [activeTab, setActiveTab] = useState('Overview');
   const [summary, setSummary] = useState(null);
   const [sales, setSales] = useState(null);
@@ -74,6 +136,10 @@ export default function ReportsPage({ token }) {
   }, [token, startDate, endDate, t]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
+
+  useEffect(() => {
+    localStorage.setItem(REPORT_DATE_RANGE_KEY, JSON.stringify({ startDate, endDate }));
+  }, [startDate, endDate]);
 
   const money = (value) => formatMinor(Number(value || 0));
   const exportCsv = () => {
@@ -142,15 +208,30 @@ export default function ReportsPage({ token }) {
       <div className="reports-filters">
         <label>
           <span>{t('reports.startDate')}</span>
-          <input type="date" value={startDate} max={endDate || undefined}
-            onChange={(e) => setStartDate(e.target.value)} />
+          <input
+            type="date"
+            value={startDate}
+            max={endDate || undefined}
+            onChange={(e) => {
+              setTimeRange('custom');
+              setStartDate(e.target.value);
+            }}
+          />
         </label>
         <label>
           <span>{t('reports.endDate')}</span>
-          <input type="date" value={endDate} min={startDate || undefined}
-            max={today()} onChange={(e) => setEndDate(e.target.value)} />
+          <input
+            type="date"
+            value={endDate}
+            min={startDate || undefined}
+            max={today()}
+            onChange={(e) => {
+              setTimeRange('custom');
+              setEndDate(e.target.value);
+            }}
+          />
         </label>
-        <button onClick={() => { setStartDate(''); setEndDate(today()); }}>
+        <button onClick={() => { setTimeRange('today'); setStartDate(getPeriodRange('today').startDate); setEndDate(getPeriodRange('today').endDate); }}>
           {t('common.clearDates')}
         </button>
         <button onClick={loadReports} disabled={loading}>
