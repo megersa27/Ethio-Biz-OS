@@ -1,6 +1,13 @@
 const API_BASE_URL = '/api';
+const DEFAULT_TIMEOUT_MS = 7000;
 
-async function apiRequest(path, options = {}) {
+export function isTransientRequestError(message = '') {
+  return /(timed out|timeout|failed to fetch|network|server took too long|aborted)/i.test(
+    String(message)
+  );
+}
+
+export async function apiRequest(path, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const { method = 'GET', token, body } = options;
 
   const headers = {
@@ -11,20 +18,28 @@ async function apiRequest(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   let response;
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
+      signal: controller.signal,
       ...(body !== undefined
         ? { body: JSON.stringify(body) }
         : {}),
     });
-  } catch {
-    throw new Error(
-      'Server waliin wal qunnamuun hin danda\'amne. Backend kee hojjechaa jiraachuu isaa mirkaneessi.'
-    );
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Request timed out. Please try again.');
+    }
+
+    throw new Error('Connection failed. Please check your connection and try again.');
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   let result;

@@ -18,6 +18,7 @@ import {
   getCustomers,
   getProducts,
   getSales,
+  isTransientRequestError,
   recordSalePayment,
 } from '../services/api.js';
 
@@ -32,6 +33,26 @@ const paymentMethods = [
   { value: 'bank_transfer', label: 'Bank transfer' },
   { value: 'other', label: 'Other' },
 ];
+
+const SALES_CACHE_KEY = 'ethioBiz.sales.cache';
+const SALES_TODAY_CACHE_KEY = 'ethioBiz.sales.today.cache';
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage write issues
+  }
+}
 
 const moneyToMinor = (value) => Math.round(Number(value) * 100);
 
@@ -136,12 +157,12 @@ async function loadTodaysSales(token) {
   );
 }
 
-export default function SalesPage({ token }) {
+export default function SalesPage({ token, setActivePage }) {
   const { t } = useTranslation();
-  const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [todaySales, setTodaySales] = useState([]);
+  const [products, setProducts] = useState(() => readStoredJson('ethioBiz.sales.products', []));
+  const [customers, setCustomers] = useState(() => readStoredJson('ethioBiz.sales.customers', []));
+  const [sales, setSales] = useState(() => readStoredJson(SALES_CACHE_KEY, []));
+  const [todaySales, setTodaySales] = useState(() => readStoredJson(SALES_TODAY_CACHE_KEY, []));
   const [pagination, setPagination] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -183,7 +204,28 @@ export default function SalesPage({ token }) {
     let cancelled = false;
 
     async function loadSalesData() {
-      setLoading(true);
+      const cachedSales = readStoredJson(SALES_CACHE_KEY, null);
+      const cachedTodaySales = readStoredJson(SALES_TODAY_CACHE_KEY, null);
+      const cachedProducts = readStoredJson('ethioBiz.sales.products', null);
+      const cachedCustomers = readStoredJson('ethioBiz.sales.customers', null);
+
+      const hasCachedData = [
+        cachedSales,
+        cachedTodaySales,
+        cachedProducts,
+        cachedCustomers,
+      ].some((value) => Array.isArray(value) ? value.length > 0 : Boolean(value));
+
+      if (hasCachedData) {
+        setProducts(Array.isArray(cachedProducts) ? cachedProducts : []);
+        setCustomers(Array.isArray(cachedCustomers) ? cachedCustomers : []);
+        setSales(Array.isArray(cachedSales) ? cachedSales : []);
+        setTodaySales(Array.isArray(cachedTodaySales) ? cachedTodaySales : []);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       setPageError('');
 
       try {
@@ -198,9 +240,17 @@ export default function SalesPage({ token }) {
         if (cancelled) return;
 
         const productRows = productResult.products || [];
+        const nextCustomers = customerResult.customers || [];
+        const nextSales = salesResult.sales || [];
+
+        writeStoredJson('ethioBiz.sales.products', productRows);
+        writeStoredJson('ethioBiz.sales.customers', nextCustomers);
+        writeStoredJson(SALES_CACHE_KEY, nextSales);
+        writeStoredJson(SALES_TODAY_CACHE_KEY, todaySalesRows);
+
         setProducts(productRows);
-        setCustomers(customerResult.customers || []);
-        setSales(salesResult.sales || []);
+        setCustomers(nextCustomers);
+        setSales(nextSales);
         setTodaySales(todaySalesRows);
         setPagination(salesResult.pagination || null);
 
@@ -227,7 +277,15 @@ export default function SalesPage({ token }) {
         );
       } catch (error) {
         if (!cancelled) {
-          setPageError(error.message || t('sales.errLoad'));
+          const message = error?.message || t('sales.errLoad');
+
+          if (isTransientRequestError(message)) {
+            setPageError('');
+            setNotice('');
+            return;
+          }
+
+          setPageError(message);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -620,6 +678,7 @@ export default function SalesPage({ token }) {
     .trim();
 
   const groupedSales = useMemo(() => groupSalesByDay(sales), [sales]);
+  const noticeTone = isTransientRequestError(notice) ? 'warning' : 'success';
 
   return (
     <section className="sales-page">
@@ -648,8 +707,15 @@ export default function SalesPage({ token }) {
       )}
 
       {notice && (
-        <div className="sales-alert sales-alert-success" role="status">
-          <CheckCircle2 size={18} />
+        <div
+          className={`sales-alert sales-alert-${noticeTone}`}
+          role={noticeTone === 'warning' ? 'alert' : 'status'}
+        >
+          {noticeTone === 'warning' ? (
+            <AlertTriangle size={18} />
+          ) : (
+            <CheckCircle2 size={18} />
+          )}
           <span>{notice}</span>
         </div>
       )}
@@ -699,6 +765,16 @@ export default function SalesPage({ token }) {
             <div>
               <strong>{t('sales.noProductsTitle')}</strong>
               <p>{t('sales.noProductsBody')}</p>
+              {setActivePage && (
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => setActivePage('Products')}
+                  style={{ marginTop: '0.9rem' }}
+                >
+                  {t('nav.products')}
+                </button>
+              )}
             </div>
           </div>
         ) : (

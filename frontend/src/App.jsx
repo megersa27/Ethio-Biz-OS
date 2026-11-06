@@ -50,6 +50,24 @@ const navItems = [
 
 const VALID_PAGES = ['Dashboard', 'Sales', 'Products', 'Inventory', 'Customers', 'Expenses', 'Reports', 'Settings', 'Help'];
 const ACTIVE_PAGE_STORAGE_KEY = 'ethioBiz.activePage';
+const DASHBOARD_CACHE_KEY = 'ethioBiz.dashboard.cache';
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage errors for non-persistent environments
+  }
+}
 
 function PlaceholderPage({ page, setActivePage }) {
   const { t } = useTranslation();
@@ -116,9 +134,9 @@ export default function App() {
   });
   const [period, setPeriod] = useState('This week');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sales, setSales] = useState([]);
-  const [dashboardSummary, setDashboardSummary] = useState(null);
-  const [lowStockItems, setLowStockItems] = useState([]);
+  const [sales, setSales] = useState(() => readStoredJson('ethioBizRecentSales', []));
+  const [dashboardSummary, setDashboardSummary] = useState(() => readStoredJson('ethioBizDashboardSummary', null));
+  const [lowStockItems, setLowStockItems] = useState(() => readStoredJson('ethioBizLowStockItems', []));
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardRefresh, setDashboardRefresh] = useState(0);
@@ -145,7 +163,20 @@ export default function App() {
     let cancelled = false;
 
     async function loadDashboardData() {
-      setDashboardLoading(true);
+      const cachedSummary = readStoredJson('ethioBizDashboardSummary', null);
+      const cachedLowStock = readStoredJson('ethioBizLowStockItems', []);
+      const cachedSales = readStoredJson('ethioBizRecentSales', []);
+      const hasCachedData = !!cachedSummary || cachedLowStock.length > 0 || cachedSales.length > 0;
+
+      if (hasCachedData) {
+        setDashboardSummary(cachedSummary);
+        setLowStockItems(cachedLowStock);
+        setSales(cachedSales);
+        setDashboardLoading(false);
+      } else {
+        setDashboardLoading(true);
+      }
+
       setDashboardError('');
 
       try {
@@ -168,52 +199,54 @@ export default function App() {
           ])
         );
 
+        const nextLowStockItems = (summary.lowStockItems || []).map((item) => ({
+          id: String(item._id || item.id || item.name),
+          name: item.name,
+          category: 'Below reorder level',
+          quantity: item.stockQuantity,
+          unit: item.unit || 'units',
+          critical:
+            Number(item.stockQuantity) <=
+            Number(item.minimumStockLevel ?? 0),
+        }));
+
+        const nextSales = (salesResult.sales || []).map((sale) => {
+          const paymentStatus = String(sale.paymentStatus || '').toUpperCase();
+
+          let status = 'Pending';
+          if (sale.saleStatus === 'CANCELLED') {
+            status = 'Cancelled';
+          } else if (paymentStatus === 'PAID') {
+            status = 'Paid';
+          } else if (Number(sale.paidAmountMinor || 0) > 0) {
+            status = 'Partial';
+          }
+
+          const rawCustomerId = sale.customerId?._id || sale.customerId;
+
+          return {
+            id: `SAL-${String(sale._id || sale.id).slice(-6).toUpperCase()}`,
+            customer: rawCustomerId
+              ? customerNames.get(String(rawCustomerId)) || 'Customer'
+              : 'Walk-in customer',
+            date: sale.createdAt
+              ? new Date(sale.createdAt).toLocaleString('en-ET', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })
+              : 'Date unavailable',
+            amountMinor: Number(sale.totalAmountMinor) || 0,
+            status,
+          };
+        });
+
+        writeStoredJson('ethioBizDashboardSummary', summary);
+        writeStoredJson('ethioBizLowStockItems', nextLowStockItems);
+        writeStoredJson('ethioBizRecentSales', nextSales);
+
         setDashboardSummary(summary);
-
-        setLowStockItems(
-          (summary.lowStockItems || []).map((item) => ({
-            id: String(item._id || item.id || item.name),
-            name: item.name,
-            category: 'Below reorder level',
-            quantity: item.stockQuantity,
-            unit: item.unit || 'units',
-            critical:
-              Number(item.stockQuantity) <=
-              Number(item.minimumStockLevel ?? 0),
-          }))
-        );
-
-        setSales(
-          (salesResult.sales || []).map((sale) => {
-            const paymentStatus = String(sale.paymentStatus || '').toUpperCase();
-
-            let status = 'Pending';
-            if (sale.saleStatus === 'CANCELLED') {
-              status = 'Cancelled';
-            } else if (paymentStatus === 'PAID') {
-              status = 'Paid';
-            } else if (Number(sale.paidAmountMinor || 0) > 0) {
-              status = 'Partial';
-            }
-
-            const rawCustomerId = sale.customerId?._id || sale.customerId;
-
-            return {
-              id: `SAL-${String(sale._id || sale.id).slice(-6).toUpperCase()}`,
-              customer: rawCustomerId
-                ? customerNames.get(String(rawCustomerId)) || 'Customer'
-                : 'Walk-in customer',
-              date: sale.createdAt
-                ? new Date(sale.createdAt).toLocaleString('en-ET', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })
-                : 'Date unavailable',
-              amountMinor: Number(sale.totalAmountMinor) || 0,
-              status,
-            };
-          })
-        );
+        setLowStockItems(nextLowStockItems);
+        setSales(nextSales);
       } catch (error) {
         if (!cancelled) {
           setDashboardError(error.message || 'Could not load dashboard data.');
@@ -301,7 +334,7 @@ export default function App() {
               <div className="page-heading">
                 <div>
                   <p className="eyebrow">{t('dashboard.eyebrow')}</p>
-                  <h1>{t('dashboard.welcome', { name: auth.user?.name || t('dashboard.welcomeThere') })}</h1>
+                  <h1 className="dashboard-welcome">{t('dashboard.welcome', { name: auth.user?.name || t('dashboard.welcomeThere') })}</h1>
                   <p>{t('dashboard.today')}</p>
                 </div>
                 <div className="heading-actions">
@@ -317,25 +350,6 @@ export default function App() {
                     {dashboardLoading ? t('common.refreshing') : t('dashboard.refreshData')}
                   </button>
                 </div>
-              </div>
-
-              <div className="demo-notice">
-                {dashboardError
-                  ? <AlertTriangle size={16} />
-                  : <Activity size={16} />}
-                <span>
-                  <strong>
-                    {dashboardError
-                      ? t('dashboard.dataErrorLabel')
-                      : dashboardLoading
-                        ? t('dashboard.dataLoadingLabel')
-                        : t('dashboard.dataLabel')}
-                  </strong>{' '}
-                  {dashboardError ||
-                    (dashboardLoading
-                      ? t('dashboard.dataLoading')
-                      : t('dashboard.dataReady'))}
-                </span>
               </div>
 
               <div className="stats-grid">
@@ -404,7 +418,7 @@ export default function App() {
               </div>
             </>
           ) : activePage === 'Sales' ? (
-            <SalesPage token={auth.accessToken} />
+            <SalesPage token={auth.accessToken} setActivePage={setActivePage} />
           ) : activePage === 'Settings' ? (
             <SettingsPage token={auth.accessToken} onProfileUpdated={updateProfile} />
           ) : activePage === 'Reports' ? (

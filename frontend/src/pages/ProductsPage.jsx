@@ -20,6 +20,25 @@ import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 
 import './ProductsPage.css';
 
+const PRODUCTS_CACHE_KEY = 'ethioBiz.products.cache';
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage write failures
+  }
+}
+
 const emptyForm = {
   name: '',
   category: 'General',
@@ -63,8 +82,8 @@ const formatETB = (minor) =>
 
 export default function ProductsPage({ token }) {
   const { t } = useTranslation();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState(() => readStoredJson(PRODUCTS_CACHE_KEY, []));
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -90,12 +109,21 @@ export default function ProductsPage({ token }) {
   }
 
   const loadProducts = useCallback(async () => {
-    setLoading(true);
+    const cachedProducts = readStoredJson(PRODUCTS_CACHE_KEY, null);
+    if (cachedProducts) {
+      setProducts(cachedProducts);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     setError('');
 
     try {
       const result = await getProducts(token);
-      setProducts(result.products || []);
+      const nextProducts = result.products || [];
+      writeStoredJson(PRODUCTS_CACHE_KEY, nextProducts);
+      setProducts(nextProducts);
     } catch (requestError) {
       setError(requestError.message || t('products.errLoad'));
     } finally {
