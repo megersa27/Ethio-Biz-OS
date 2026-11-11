@@ -1,8 +1,8 @@
 const API_BASE_URL = '/api';
-const DEFAULT_TIMEOUT_MS = 7000;
+const DEFAULT_TIMEOUT_MS = 60000;
 
 export function isTransientRequestError(message = '') {
-  return /(timed out|timeout|failed to fetch|network|server took too long|aborted)/i.test(
+  return /(timed out|timeout|too long to respond|failed to fetch|network|server took too long|aborted|backend)/i.test(
     String(message)
   );
 }
@@ -34,10 +34,10 @@ export async function apiRequest(path, options = {}, timeoutMs = DEFAULT_TIMEOUT
     });
   } catch (error) {
     if (error?.name === 'AbortError') {
-      throw new Error('Request timed out. Please try again.');
+      throw new Error('The backend is not responding. Please make sure the backend server is running, then try again.');
     }
 
-    throw new Error('Connection failed. Please check your connection and try again.');
+    throw new Error('Unable to reach the backend. Please make sure the backend server is running, then try again.');
   } finally {
     clearTimeout(timeoutId);
   }
@@ -70,7 +70,7 @@ export function loginUser(credentials) {
   return apiRequest('/auth/login', {
     method: 'POST',
     body: credentials,
-  });
+  }, 60000);
 }
 
 export function getCurrentUser(token) {

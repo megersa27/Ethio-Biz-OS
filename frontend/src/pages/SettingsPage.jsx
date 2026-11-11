@@ -9,6 +9,25 @@ import { supportedLanguages } from '../i18n.js';
 import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 import './SettingsPage.css';
 
+const SETTINGS_PROFILE_CACHE_KEY = 'ethioBiz.settings.profile';
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage write failures
+  }
+}
+
 const emptyForm = {
   businessName: '',
   businessPhone: '',
@@ -21,9 +40,20 @@ const emptyForm = {
 
 export default function SettingsPage({ token, onProfileUpdated }) {
   const { t, i18n } = useTranslation();
-  const [profile, setProfile] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(() => readStoredJson(SETTINGS_PROFILE_CACHE_KEY, null));
+  const [form, setForm] = useState(() => {
+    const cached = readStoredJson(SETTINGS_PROFILE_CACHE_KEY, null);
+    return cached?.business ? {
+      businessName: cached.business.name || '',
+      businessPhone: cached.business.phone || '',
+      address: cached.business.address || '',
+      ownerName: cached.user.name || '',
+      email: cached.user.email || '',
+      ownerPhone: cached.user.phone || '',
+      photo: cached.user.photo || '',
+    } : emptyForm;
+  });
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -31,11 +61,28 @@ export default function SettingsPage({ token, onProfileUpdated }) {
   useAutoDismissNotice(notice, setNotice);
 
   const loadProfile = useCallback(async () => {
-    setLoading(true);
+    const cached = readStoredJson(SETTINGS_PROFILE_CACHE_KEY, null);
+    if (cached) {
+      setProfile(cached);
+      setForm({
+        businessName: cached.business.name || '',
+        businessPhone: cached.business.phone || '',
+        address: cached.business.address || '',
+        ownerName: cached.user.name || '',
+        email: cached.user.email || '',
+        ownerPhone: cached.user.phone || '',
+        photo: cached.user.photo || '',
+      });
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     setError('');
     try {
       const result = await getSettingsProfile(token);
       const current = result.profile;
+      writeStoredJson(SETTINGS_PROFILE_CACHE_KEY, current);
       setProfile(current);
       setForm({
         businessName: current.business.name || '',

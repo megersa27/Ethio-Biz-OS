@@ -5,9 +5,12 @@ const User = require("../models/User");
 const { hashPassword, comparePassword } = require("../utils/password");
 const { generateToken } = require("../utils/jwt");
 
+// ======================================================
+// REGISTER BUSINESS
+// ======================================================
 
 async function registerBusiness(input = {}) {
-  // 1. Validate the request body before using its fields.
+  // 1. Validate input.
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     const error = new Error("A valid registration object is required");
     error.statusCode = 400;
@@ -88,11 +91,16 @@ async function registerBusiness(input = {}) {
     throw error;
   }
 
-  // 2. Check whether this email or phone is already registered.
+  // 2. Check for an existing email or phone.
   const conditions = [];
 
-  if (normalizedEmail) conditions.push({ email: normalizedEmail });
-  if (normalizedPhone) conditions.push({ phone: normalizedPhone });
+  if (normalizedEmail) {
+    conditions.push({ email: normalizedEmail });
+  }
+
+  if (normalizedPhone) {
+    conditions.push({ phone: normalizedPhone });
+  }
 
   const existingUser = await User.findOne({ $or: conditions });
 
@@ -104,14 +112,15 @@ async function registerBusiness(input = {}) {
     throw error;
   }
 
-  // 3. Hash the password before storing it.
+  // 3. Hash the password.
   const passwordHash = await hashPassword(password);
+
+  // 4. Create business and owner in a transaction.
   const session = await mongoose.startSession();
 
   try {
     let result;
 
-    // 4. Create the business and owner atomically.
     await session.withTransaction(async () => {
       const [business] = await Business.create(
         [{ name: businessName.trim() }],
@@ -132,7 +141,6 @@ async function registerBusiness(input = {}) {
         { session }
       );
 
-      // Never include the password hash in the API response.
       result = {
         business: {
           id: business._id,
@@ -151,7 +159,6 @@ async function registerBusiness(input = {}) {
 
     return result;
   } catch (error) {
-    // 5. Handle duplicate-key errors, including concurrent requests.
     if (error.code === 11000) {
       const conflictError = new Error(
         "An account with this email or phone already exists"
@@ -166,90 +173,190 @@ async function registerBusiness(input = {}) {
   }
 }
 
+// ======================================================
+// LOGIN USER
+// ======================================================
+
 async function loginUser(input = {}) {
-if (!input || typeof input !== "object" || Array.isArray(input)) {
-const error = new Error("A valid login object is required");
-error.statusCode = 400;
-throw error;
+  console.log("[LOGIN DEBUG] Validating input");
+
+  // 1. Validate input.
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    const error = new Error("A valid login object is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { identifier, password } = input;
+
+  if (typeof identifier !== "string" || !identifier.trim()) {
+    const error = new Error("Email or phone number is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (typeof password !== "string" || !password) {
+    const error = new Error("Password is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedIdentifier = identifier.trim();
+  const isEmail = normalizedIdentifier.includes("@");
+
+  const userQuery = isEmail
+    ? { email: normalizedIdentifier.toLowerCase() }
+    : { phone: normalizedIdentifier };
+
+  try {
+    // 2. Check MongoDB connection.
+    console.log(
+      "[LOGIN DEBUG] Mongoose readyState:",
+      User.db.readyState
+    );
+
+    if (User.db.readyState !== 1) {
+      const error = new Error("Database connection is not ready");
+      error.statusCode = 503;
+      throw error;
+    }
+
+    console.time("[LOGIN DEBUG] MongoDB ping");
+
+    await User.db.db.admin().ping();
+
+    console.timeEnd("[LOGIN DEBUG] MongoDB ping");
+
+    // 3. Look up the user directly in MongoDB.
+    // This bypasses Mongoose's query layer for diagnosis.
+    console.log("[LOGIN DEBUG] Starting native MongoDB lookup");
+    console.log("[LOGIN DEBUG] Collection:", User.collection.name);
+    console.log("[LOGIN DEBUG] Query field:", isEmail ? "email" : "phone");
+
+    const nativeUserCollection = User.db.db.collection(
+      User.collection.name
+    );
+
+    console.time("[LOGIN DEBUG] Native MongoDB lookup");
+
+    const user = await nativeUserCollection.findOne(
+      userQuery,
+      { maxTimeMS: 10000 }
+    );
+
+    console.timeEnd("[LOGIN DEBUG] Native MongoDB lookup");
+
+    console.log(
+      "[LOGIN DEBUG] Native lookup completed:",
+      Boolean(user)
+    );
+
+    if (!user) {
+      const error = new Error("Invalid email/phone or password");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // 4. Verify password.
+    console.log("[LOGIN DEBUG] Comparing password");
+
+    if (!user.passwordHash) {
+      throw new Error("Password hash is missing from the user record");
+    }
+
+    const passwordMatches = await comparePassword(
+      password,
+      user.passwordHash
+    );
+
+    console.log(
+      "[LOGIN DEBUG] Password comparison completed:",
+      passwordMatches
+    );
+
+    if (!passwordMatches) {
+      const error = new Error("Invalid email/phone or password");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // 5. Check account status.
+    if (!user.isActive) {
+      const error = new Error("This account is inactive");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    // 6. Find associated business.
+    console.log("[LOGIN DEBUG] Finding business");
+
+    const business = await Business.findById(user.businessId);
+
+    console.log(
+      "[LOGIN DEBUG] Business lookup completed:",
+      Boolean(business)
+    );
+
+    if (!business || !business.isActive) {
+      const error = new Error("This business account is inactive");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    // 7. Generate JWT.
+    console.log("[LOGIN DEBUG] Generating access token");
+
+    if (!user.businessId) {
+      const error = new Error("This account is not linked to a business yet");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    try {
+      const accessToken = generateToken(user);
+      console.log("[LOGIN DEBUG] Login completed successfully");
+
+      // 8. Return login response.
+      return {
+        accessToken,
+        tokenType: "Bearer",
+        expiresIn: 3600,
+
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          photo: user.photo || "",
+          role: user.role,
+          businessId: user.businessId,
+        },
+
+        business: {
+          id: business._id,
+          name: business.name,
+        },
+      };
+    } catch (error) {
+      if (error.message === "User account is missing business information") {
+        error.statusCode = 401;
+      }
+      throw error;
+    }
+
+    console.log("[LOGIN DEBUG] Login completed successfully");
+
+  } catch (error) {
+    console.error("[LOGIN DEBUG] Login failed:", error.message);
+    throw error;
+  }
 }
 
-const { identifier, password } = input;
-
-if (typeof identifier !== "string" || !identifier.trim()) {
-const error = new Error("Email or phone number is required");
-error.statusCode = 400;
-throw error;
-}
-
-if (typeof password !== "string" || !password) {
-const error = new Error("Password is required");
-error.statusCode = 400;
-throw error;
-}
-
-const normalizedIdentifier = identifier.trim();
-const isEmail = normalizedIdentifier.includes("@");
-
-const userQuery = isEmail
-? { email: normalizedIdentifier.toLowerCase() }
-: { phone: normalizedIdentifier };
-
-const user = await User.findOne(userQuery).select("+passwordHash");
-
-if (!user) {
-const error = new Error("Invalid email/phone or password");
-error.statusCode = 401;
-throw error;
-}
-
-const passwordMatches = await comparePassword(
-password,
-user.passwordHash
-);
-
-if (!passwordMatches) {
-const error = new Error("Invalid email/phone or password");
-error.statusCode = 401;
-throw error;
-}
-
-if (!user.isActive) {
-const error = new Error("This account is inactive");
-error.statusCode = 403;
-throw error;
-}
-
-const business = await Business.findById(user.businessId);
-
-if (!business || !business.isActive) {
-const error = new Error("This business account is inactive");
-error.statusCode = 403;
-throw error;
-}
-
-const accessToken = generateToken(user);
-
-return {
-accessToken,
-tokenType: "Bearer",
-expiresIn: 3600,
-user: {
-id: user._id,
-name: user.name,
-email: user.email,
-phone: user.phone,
-photo: user.photo || "",
-role: user.role,
-businessId: user.businessId,
-},
-business: {
-id: business._id,
-name: business.name,
-},
-};
-}
+// ======================================================
+// EXPORT SERVICES
+// ======================================================
 
 module.exports = {
-registerBusiness,
-loginUser,
+  registerBusiness,
+  loginUser,
 };

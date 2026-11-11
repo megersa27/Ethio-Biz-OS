@@ -18,6 +18,27 @@ import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 
 import './InventoryPage.css';
 
+const INVENTORY_PRODUCTS_CACHE_KEY = 'ethioBiz.inventory.products';
+const INVENTORY_MOVEMENTS_CACHE_KEY = 'ethioBiz.inventory.movements';
+const INVENTORY_PAGINATION_CACHE_KEY = 'ethioBiz.inventory.pagination';
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage write issues in restricted environments
+  }
+}
+
 const increasesStock = (type) =>
   type === 'RECEIVED' || type === 'ADJUSTMENT_INCREASE';
 
@@ -41,14 +62,14 @@ function formatDate(value) {
 
 export default function InventoryPage({ token }) {
   const { t } = useTranslation();
-  const [products, setProducts] = useState([]);
-  const [movements, setMovements] = useState([]);
-  const [pagination, setPagination] = useState(null);
+  const [products, setProducts] = useState(() => readStoredJson(INVENTORY_PRODUCTS_CACHE_KEY, []));
+  const [movements, setMovements] = useState(() => readStoredJson(INVENTORY_MOVEMENTS_CACHE_KEY, []));
+  const [pagination, setPagination] = useState(() => readStoredJson(INVENTORY_PAGINATION_CACHE_KEY, null));
   const [productFilter, setProductFilter] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [productSearchFocused, setProductSearchFocused] = useState(false);
   const [reasonSearchFocused, setReasonSearchFocused] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pageError, setPageError] = useState('');
   const [formError, setFormError] = useState('');
@@ -120,7 +141,19 @@ export default function InventoryPage({ token }) {
     let cancelled = false;
 
     async function loadInventory() {
-      setLoading(true);
+      const cachedProducts = readStoredJson(INVENTORY_PRODUCTS_CACHE_KEY, null);
+      const cachedMovements = readStoredJson(INVENTORY_MOVEMENTS_CACHE_KEY, null);
+      const cachedPagination = readStoredJson(INVENTORY_PAGINATION_CACHE_KEY, null);
+
+      if (cachedProducts || cachedMovements || cachedPagination) {
+        setProducts(cachedProducts || []);
+        setMovements(cachedMovements || []);
+        setPagination(cachedPagination || null);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       setPageError('');
 
       try {
@@ -135,6 +168,9 @@ export default function InventoryPage({ token }) {
         if (cancelled) return;
 
         const rows = productResult.products || [];
+        writeStoredJson(INVENTORY_PRODUCTS_CACHE_KEY, rows);
+        writeStoredJson(INVENTORY_MOVEMENTS_CACHE_KEY, movementResult.movements || []);
+        writeStoredJson(INVENTORY_PAGINATION_CACHE_KEY, movementResult.pagination || null);
         setProducts(rows);
         setMovements(movementResult.movements || []);
         setPagination(movementResult.pagination || null);

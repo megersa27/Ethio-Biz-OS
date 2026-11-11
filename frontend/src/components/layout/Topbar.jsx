@@ -42,8 +42,28 @@ export default function Topbar({
       }
     }
 
+    function closeOnLanguageChange() {
+      setNotificationsOpen(false);
+      setProfileOpen(false);
+    }
+
+    function closeTopbarMenus(event) {
+      const source = event?.detail?.source;
+      if (source === 'language' || source === 'profile' || source === 'notifications') {
+        setNotificationsOpen(false);
+        setProfileOpen(false);
+      }
+    }
+
     document.addEventListener('pointerdown', closeMenus);
-    return () => document.removeEventListener('pointerdown', closeMenus);
+    window.addEventListener('ethio:language-change', closeOnLanguageChange);
+    window.addEventListener('ethio:close-topbar-menus', closeTopbarMenus);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeMenus);
+      window.removeEventListener('ethio:language-change', closeOnLanguageChange);
+      window.removeEventListener('ethio:close-topbar-menus', closeTopbarMenus);
+    };
   }, []);
 
   const lowStockCount = Array.isArray(lowStockItems) ? lowStockItems.length : 0;

@@ -20,8 +20,10 @@ import { getSales, getExpenses } from '../../services/api.js';
 
 function StatCard({ label, value, change, note, icon: Icon, color, direction = 'up' }) {
   const TrendIcon = direction === 'up' ? ArrowUpRight : ArrowDownRight;
+  const tone = color || 'green';
+
   return (
-    <article className="stat-card">
+    <article className="stat-card" data-tone={tone}>
       <div className="stat-top">
         <span className="stat-label">{label}</span>
         <span className={`stat-icon ${color || ''}`}><Icon size={19} /></span>
@@ -166,20 +168,61 @@ async function fetchAllReportRows(loader, token, filters, key) {
   );
 }
 
+function isTransientChartError(error) {
+  const message = String(error?.message || '');
+  return /timed out|timeout|failed to fetch|network|aborted/i.test(message);
+}
+
+function getChartErrorMessage(error, t) {
+  if (isTransientChartError(error)) {
+    return '';
+  }
+
+  return error?.message || t('chart.errorMsg');
+}
+
+function readChartCache(period) {
+  try {
+    const raw = sessionStorage.getItem(`ethioBiz.chart.${period}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeChartCache(period, value) {
+  try {
+    sessionStorage.setItem(`ethioBiz.chart.${period}`, JSON.stringify(value));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function SalesChart({ period, setPeriod, token }) {
   const { t } = useTranslation();
-  const [chartData, setChartData] = useState([]);
-  const [periodSalesMinor, setPeriodSalesMinor] = useState(0);
-  const [periodExpensesMinor, setPeriodExpensesMinor] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [chartData, setChartData] = useState(() => readChartCache('This week')?.data || []);
+  const [periodSalesMinor, setPeriodSalesMinor] = useState(() => readChartCache('This week')?.salesMinor || 0);
+  const [periodExpensesMinor, setPeriodExpensesMinor] = useState(() => readChartCache('This week')?.expensesMinor || 0);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [hasRecords, setHasRecords] = useState(false);
+  const [hasRecords, setHasRecords] = useState(() => !!readChartCache('This week')?.hasRecords);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadChart() {
-      setLoading(true);
+      const cachedChart = readChartCache(period);
+      if (cachedChart) {
+        setChartData(cachedChart.data || []);
+        setPeriodSalesMinor(cachedChart.salesMinor || 0);
+        setPeriodExpensesMinor(cachedChart.expensesMinor || 0);
+        setHasRecords(Boolean(cachedChart.hasRecords));
+        setError('');
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       setError('');
 
       try {
@@ -212,21 +255,29 @@ function SalesChart({ period, setPeriod, token }) {
           if (bucket) bucket.expensesMinor += Number(expense.amountMinor || 0);
         }
 
-        setPeriodSalesMinor(
-          validSales.reduce((sum, sale) => sum + Number(sale.totalAmountMinor || 0), 0)
-        );
-        setPeriodExpensesMinor(
-          expenseRows.reduce((sum, expense) => sum + Number(expense.amountMinor || 0), 0)
-        );
-        setHasRecords(validSales.length > 0 || expenseRows.length > 0);
-        setChartData(buckets.map((bucket) => ({
+        const nextSalesMinor = validSales.reduce((sum, sale) => sum + Number(sale.totalAmountMinor || 0), 0);
+        const nextExpensesMinor = expenseRows.reduce((sum, expense) => sum + Number(expense.amountMinor || 0), 0);
+        const nextHasRecords = validSales.length > 0 || expenseRows.length > 0;
+        const nextChartData = buckets.map((bucket) => ({
           day: bucket.label,
           sales: bucket.salesMinor / 100,
           expenses: bucket.expensesMinor / 100,
-        })));
+        }));
+
+        setPeriodSalesMinor(nextSalesMinor);
+        setPeriodExpensesMinor(nextExpensesMinor);
+        setHasRecords(nextHasRecords);
+        setChartData(nextChartData);
+        writeChartCache(period, {
+          data: nextChartData,
+          salesMinor: nextSalesMinor,
+          expensesMinor: nextExpensesMinor,
+          hasRecords: nextHasRecords,
+        });
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || 'Unable to load sales and expense trends.');
+          const message = getChartErrorMessage(err, t);
+          setError(message);
           setChartData([]);
           setHasRecords(false);
         }

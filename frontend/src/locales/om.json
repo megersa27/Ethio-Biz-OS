@@ -126,7 +126,7 @@
   },
   "dashboard": {
     "eyebrow": "DALDALAA GABAABSAAN",
-    "welcome": "Baga nagaan deebite, {{name}} 👋",
+    "welcome": "Baga nagaan deebite, {{name}}",
     "welcomeThere": "ateetee",
     "today": "Har'a daldalaa kee keessa waan raawwatu kana.",
     "export": "Baasi",
@@ -283,6 +283,9 @@
     "fullPayment": "Kaffaltii guutuu",
     "creditSale": "Gurgurtaa liqii",
     "addNewCustomer": "Maamila haaraa dabali",
+    "recordCustomerInfo": "Odeeffannoo maamilaa galmeessi",
+    "customerInfoRequired": "Odeeffannoo maamilaa galmeessuuf maqaa fi bilbila dirqama.",
+    "partialAmountRequired": "Odeeffannoo maamilaa olkaasuuf dura kaffaltii hirmaataa galchi.",
     "saveCustomer": "Maamila olkaa'i",
     "customerSaved": "Maamilaan olkaa'ameera; filatameera.",
     "customerAlreadyExists": "Maamilaan kun duraan jira; filatameera.",

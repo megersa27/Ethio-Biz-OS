@@ -126,7 +126,7 @@
   },
   "dashboard": {
     "eyebrow": "ንግድ በጠቅላላ",
-    "welcome": "እንኳን በደህና በድረሱ፣ {{name}} 👋",
+    "welcome": "እንኳን በደህና በድረሱ፣ {{name}}",
     "welcomeThere": "እንኳን በደህና በድረሱ",
     "today": "ዛሬ በንግድዎ የሚካሄደው ይህ ነው።",
     "export": "ላክ",
@@ -283,6 +283,9 @@
     "fullPayment": "ሙሉ ክፍያ",
     "creditSale": "በብድር ሽያጭ",
     "addNewCustomer": "አዲስ ደንበኛ ጨምር",
+    "recordCustomerInfo": "የደንበኛ መረጃ ይመዝግቡ",
+    "customerInfoRequired": "የደንበኛ መረጃን ለመመዝገብ ስም እና ስልክ አስፈላጊ ናቸው።",
+    "partialAmountRequired": "የደንበኛ መረጃን ከመቀመጥ በፊት የከፊል መጠን ያስገቡ።",
     "saveCustomer": "ደንበኛን አስቀምጥ",
     "customerSaved": "ደንበኛው ተመዝግቦ ተመርጧል።",
     "customerAlreadyExists": "ይህ ደንበኛ አስቀድሞ አለ፤ ተመርጧል።",

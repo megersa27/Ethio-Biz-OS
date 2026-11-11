@@ -46,8 +46,8 @@ app.use((err, req, res, next) => {
   }
 
   if (statusCode >= 500) {
-    console.error("API error:", err.message);
-  }
+  console.error("API ERROR DETAILS:", err);
+}
 
   return res.status(statusCode).json({
     success: false,

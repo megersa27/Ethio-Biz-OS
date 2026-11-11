@@ -39,23 +39,32 @@ export function AuthProvider({ children }) {
       };
     }
 
+    const cachedUser = readStoredJson('ethioBizUser', {});
+    const cachedBusiness = readStoredJson('ethioBizBusiness', null);
+
+    if (!cancelled && (cachedUser || cachedBusiness)) {
+      setAuth({
+        accessToken: token,
+        user: cachedUser || {},
+        business: cachedBusiness,
+      });
+      setAuthChecking(false);
+    }
+
     async function restoreSession() {
       try {
         const result = await getCurrentUser(token);
-        const cachedUser = readStoredJson('ethioBizUser', {});
-        const cachedBusiness = readStoredJson('ethioBizBusiness', null);
 
         if (!cancelled) {
           setAuth({
             accessToken: token,
-            user: { ...cachedUser, ...result.user },
+            user: { ...cachedUser, ...(result?.user || {}) },
             business: cachedBusiness,
           });
         }
       } catch {
-        clearStoredSession();
-
-        if (!cancelled) {
+        if (!cancelled && !cachedUser && !cachedBusiness) {
+          clearStoredSession();
           setAuth(null);
         }
       } finally {

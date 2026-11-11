@@ -13,14 +13,22 @@ function getJwtSecret() {
 }
 
 function generateToken(user) {
+  if (!user || typeof user !== "object") {
+    throw new Error("User account is missing business information");
+  }
+
+  if (!user._id || !user.businessId || !user.role) {
+    throw new Error("User account is missing business information");
+  }
+
   return jwt.sign(
     {
-      businessId: user.businessId.toString(),
+      businessId: String(user.businessId),
       role: user.role,
     },
     getJwtSecret(),
     {
-      subject: user._id.toString(),
+      subject: String(user._id),
       expiresIn: "1h",
       issuer: "ethiobiz-os",
       audience: "ethiobiz-os-api",

@@ -59,11 +59,13 @@ Do not commit `.env` or publish database credentials or JWT secrets.
 
 The example environment file defines:
 
-| Variable      | Purpose                                   |
-| ------------- | ----------------------------------------- |
-| `PORT`        | HTTP server port; example value: `5000`   |
-| `MONGODB_URI` | MongoDB connection string                 |
-| `JWT_SECRET`  | Secret used to sign authentication tokens |
+| Variable      | Purpose                                                                          |
+| ------------- | -------------------------------------------------------------------------------- |
+| `PORT`        | HTTP server port; example value: `5000`                                          |
+| `MONGODB_URI` | MongoDB connection string; local default is `mongodb://127.0.0.1:27017/ethioBiz` |
+| `JWT_SECRET`  | Secret used to sign authentication tokens                                        |
+
+For local development, the backend defaults to a local MongoDB instance at `mongodb://127.0.0.1:27017/ethioBiz` when no environment value is configured.
 
 ## Running the Server
 

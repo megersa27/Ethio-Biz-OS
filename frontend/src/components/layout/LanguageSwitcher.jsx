@@ -25,9 +25,15 @@ export default function LanguageSwitcher({ className = '' }) {
     return () => document.removeEventListener('pointerdown', close);
   }, []);
 
+  function closeOtherMenus() {
+    window.dispatchEvent(new CustomEvent('ethio:close-topbar-menus', { detail: { source: 'language' } }));
+  }
+
   function selectLanguage(code) {
     i18n.changeLanguage(code);
     setOpen(false);
+    closeOtherMenus();
+    window.dispatchEvent(new Event('ethio:language-change'));
   }
 
   const currentConfig = supportedLanguages.find((l) => l.code === current) || supportedLanguages[0];
@@ -38,7 +44,13 @@ export default function LanguageSwitcher({ className = '' }) {
       <button
         type="button"
         className="icon-button language-button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          const nextOpen = !open;
+          setOpen(nextOpen);
+          if (nextOpen) {
+            closeOtherMenus();
+          }
+        }}
         aria-label={t('language.label')}
         aria-expanded={open}
         title={t('language.label')}

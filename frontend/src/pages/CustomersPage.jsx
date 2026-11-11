@@ -13,6 +13,25 @@ const paymentMethods = [
   { value: 'other', label: 'Other' },
 ];
 
+const CUSTOMERS_CACHE_KEY = 'ethioBiz.customers.cache';
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage write issues in restricted environments
+  }
+}
+
 const moneyToMinor = (value) => Math.round(Number(value) * 100);
 
 const formatDate = (value) => {
@@ -56,9 +75,9 @@ async function loadAllSales(token) {
 
 export default function CustomersPage({ token }) {
   const { t } = useTranslation();
-  const [customers, setCustomers] = useState([]);
+  const [customers, setCustomers] = useState(() => readStoredJson(CUSTOMERS_CACHE_KEY, []));
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentSale, setPaymentSale] = useState(null);
   const [additionalPayment, setAdditionalPayment] = useState('');
@@ -185,7 +204,9 @@ export default function CustomersPage({ token }) {
         }
       });
 
-      setCustomers([...customerMap.values()].filter((customer) => customer.balanceDueMinor > 0).sort((a, b) => a.name.localeCompare(b.name)));
+      const nextCustomers = [...customerMap.values()].filter((customer) => customer.balanceDueMinor > 0).sort((a, b) => a.name.localeCompare(b.name));
+      writeStoredJson(CUSTOMERS_CACHE_KEY, nextCustomers);
+      setCustomers(nextCustomers);
     } catch (error) {
       setFormError(error.message || t('sales.errPaymentFailed'));
     } finally {
@@ -198,7 +219,14 @@ export default function CustomersPage({ token }) {
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
+      const cachedCustomers = readStoredJson(CUSTOMERS_CACHE_KEY, null);
+      if (cachedCustomers) {
+        setCustomers(cachedCustomers);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       setError('');
 
       try {

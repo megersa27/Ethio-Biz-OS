@@ -18,8 +18,14 @@ async function register(req, res, next) {
 }
 
 async function login(req, res, next) {
+  console.log("[LOGIN DEBUG] Request received:", new Date().toISOString());
+
   try {
+    console.log("[LOGIN DEBUG] Starting login service");
+
     const result = await loginUser(req.body);
+
+    console.log("[LOGIN DEBUG] Login service completed");
 
     return res.status(200).json({
       success: true,
@@ -27,6 +33,7 @@ async function login(req, res, next) {
       data: result,
     });
   } catch (error) {
+    console.error("[LOGIN DEBUG] Error:", error.message);
     next(error);
   }
 }

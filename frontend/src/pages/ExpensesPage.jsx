@@ -82,9 +82,28 @@ function formatDate(value) {
   });
 }
 
+const EXPENSES_CACHE_KEY = 'ethioBiz.expenses.cache';
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage issues
+  }
+}
+
 export default function ExpensesPage({ token }) {
   const { t } = useTranslation();
-  const [expenses, setExpenses] = useState([]);
+  const [expenses, setExpenses] = useState(() => readStoredJson(EXPENSES_CACHE_KEY, []));
   const [pagination, setPagination] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -106,7 +125,14 @@ export default function ExpensesPage({ token }) {
     let cancelled = false;
 
     async function loadExpenses() {
-      setLoading(true);
+      const cached = readStoredJson(EXPENSES_CACHE_KEY, null);
+      if (cached) {
+        setExpenses(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       setPageError('');
 
       try {
@@ -118,7 +144,9 @@ export default function ExpensesPage({ token }) {
         });
 
         if (!cancelled) {
-          setExpenses(result.expenses || []);
+          const nextExpenses = result.expenses || [];
+          writeStoredJson(EXPENSES_CACHE_KEY, nextExpenses);
+          setExpenses(nextExpenses);
           setPagination(result.pagination || null);
         }
       } catch (error) {

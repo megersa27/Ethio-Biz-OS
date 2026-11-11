@@ -126,7 +126,7 @@
   },
   "dashboard": {
     "eyebrow": "BUSINESS AT A GLANCE",
-    "welcome": "Welcome back, {{name}} 👋",
+    "welcome": "Welcome back, {{name}}",
     "welcomeThere": "there",
     "today": "Here's what's happening with your business today.",
     "export": "Export",
@@ -283,6 +283,9 @@
     "fullPayment": "Full payment",
     "creditSale": "Credit sale",
     "addNewCustomer": "Add new customer",
+    "recordCustomerInfo": "Record customer info",
+    "customerInfoRequired": "Name and phone are required to record customer information.",
+    "partialAmountRequired": "Please enter the partial amount before saving customer information.",
     "saveCustomer": "Save customer",
     "customerSaved": "Customer saved and selected.",
     "customerAlreadyExists": "This customer already exists and has been selected.",

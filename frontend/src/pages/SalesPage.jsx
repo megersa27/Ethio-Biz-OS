@@ -178,12 +178,9 @@ export default function SalesPage({ token, setActivePage }) {
     { productId: '', productSearch: '', quantity: '' },
   ]);
   const [openProductIndex, setOpenProductIndex] = useState(null);
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
   const [newCustomerOpen, setNewCustomerOpen] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerPhone, setNewCustomerPhone] = useState('');
-  const [newCustomerAddress, setNewCustomerAddress] = useState('');
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [customerCreateError, setCustomerCreateError] = useState('');
 
@@ -191,7 +188,6 @@ export default function SalesPage({ token, setActivePage }) {
   const [paidAmount, setPaidAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('full');
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [paymentReference, setPaymentReference] = useState('');
   const [notes, setNotes] = useState('');
 
   const [paymentSale, setPaymentSale] = useState(null);
@@ -399,19 +395,15 @@ export default function SalesPage({ token, setActivePage }) {
       { productId: '', productSearch: '', quantity: '' },
     ]);
     setCustomerId('');
-    setCustomerSearch('');
-    setCustomerDropdownOpen(false);
     setNewCustomerOpen(false);
     setNewCustomerName('');
     setNewCustomerPhone('');
-    setNewCustomerAddress('');
     setCustomerCreateError('');
 
     setOpenProductIndex(null);
     setPaymentMode('full');
     setPaidAmount('');
     setPaymentMethod('cash');
-    setPaymentReference('');
     setNotes('');
   }
 
@@ -420,11 +412,17 @@ export default function SalesPage({ token, setActivePage }) {
 
     const name = newCustomerName.trim();
     const phone = newCustomerPhone.trim();
-    const address = newCustomerAddress.trim();
 
-    if (!name) return;
+    if (!name || !phone) {
+      setCustomerCreateError(t('sales.customerInfoRequired'));
+      return;
+    }
 
-    // Reuse an existing customer instead of creating a duplicate.
+    if (paymentMode === 'partial' && (!Number.isFinite(Number(paidAmount)) || Number(paidAmount) <= 0)) {
+      setCustomerCreateError(t('sales.partialAmountRequired'));
+      return;
+    }
+
     const existing = customers.find(
       (customer) =>
         String(customer.name || '').trim().toLowerCase() === name.toLowerCase() &&
@@ -433,11 +431,9 @@ export default function SalesPage({ token, setActivePage }) {
 
     if (existing) {
       setCustomerId(String(existing._id));
-      setCustomerSearch(existing.name);
       setNewCustomerOpen(false);
       setNewCustomerName('');
       setNewCustomerPhone('');
-      setNewCustomerAddress('');
       setNotice(t('sales.customerAlreadyExists'));
       return;
     }
@@ -445,9 +441,8 @@ export default function SalesPage({ token, setActivePage }) {
     setCreatingCustomer(true);
 
     try {
-      const result = await createCustomer(token, { name, phone, address });
+      const result = await createCustomer(token, { name, phone });
 
-      // Reload saved customers so the new customer is immediately selectable.
       const refreshed = await getCustomers(token);
       const rows = refreshed.customers || [];
       setCustomers(rows);
@@ -473,12 +468,9 @@ export default function SalesPage({ token, setActivePage }) {
       }
 
       setCustomerId(String(savedCustomer._id));
-      setCustomerSearch(savedCustomer.name);
-      setCustomerDropdownOpen(false);
       setNewCustomerOpen(false);
       setNewCustomerName('');
       setNewCustomerPhone('');
-      setNewCustomerAddress('');
       setNotice(t('sales.customerSaved'));
     } catch (error) {
       setCustomerCreateError(
@@ -592,7 +584,6 @@ export default function SalesPage({ token, setActivePage }) {
 
     if (paidAmountMinor > 0) {
       saleData.paymentMethod = paymentMethod;
-      saleData.paymentReference = paymentReference.trim();
     }
 
     setSaving(true);
@@ -962,12 +953,8 @@ export default function SalesPage({ token, setActivePage }) {
                       : ''
                   );
 
-                  if (mode !== 'partial') setPaymentReference('');
-
                   if (mode === 'full') {
                     setCustomerId('');
-                    setCustomerSearch('');
-                    setCustomerDropdownOpen(false);
                     setNotes('');
                   }
                 }}
@@ -982,87 +969,17 @@ export default function SalesPage({ token, setActivePage }) {
 
               {paymentMode !== 'full' && (
               <div className="sales-customer-field">
-                <label htmlFor="sales-customer-search">
-                  {t('sales.customer')}
-                </label>
-
-                <div className="sales-customer-search">
-                  <input
-                    id="sales-customer-search"
-                    type="text"
-                    value={
-                      customerSearch ||
-                      customers.find(
-                        (customer) => String(customer._id) === String(customerId)
-                      )?.name ||
-                      ''
-                    }
-                    onFocus={() => setCustomerDropdownOpen(true)}
-                    onClick={() => setCustomerDropdownOpen(true)}
-                    onBlur={(event) => {
-                      if (!event.currentTarget.parentElement?.contains(event.relatedTarget)) {
-                        setCustomerDropdownOpen(false);
-                      }
-                    }}
-                    onChange={(event) => {
-                      setCustomerSearch(event.target.value);
-                      setCustomerId('');
-                      setCustomerDropdownOpen(true);
-                    }}
-                    placeholder={t('sales.selectCreditCustomer')}
-                    autoComplete="off"
-                    disabled={saving}
-                  />
-
-                  {customerDropdownOpen && (
-                    <div className="sales-product-options" role="listbox">
-
-                      {customers
-                        .filter((customer) => {
-                          const query = customerId
-                            ? ''
-                            : customerSearch.trim().toLocaleLowerCase();
-
-                          return (
-                            !query ||
-                            String(customer.name || '')
-                              .toLocaleLowerCase()
-                              .includes(query)
-                          );
-                        })
-                        .map((customer) => (
-                          <button
-                            key={customer._id}
-                            type="button"
-                            className="sales-product-option"
-                            role="option"
-                            aria-selected={String(customer._id) === String(customerId)}
-                            onClick={() => {
-                              setCustomerId(String(customer._id));
-                              setCustomerSearch(customer.name);
-                              setCustomerDropdownOpen(false);
-                            }}
-                            disabled={saving}
-                          >
-                            <span>{customer.name}</span>
-                          </button>
-                        ))}
-                    </div>
-                  )}
-                </div>
-
                 <button
                   type="button"
                   className="sales-add-customer"
                   onClick={() => {
                     setNewCustomerOpen((value) => !value);
-                    setCustomerDropdownOpen(false);
                     setCustomerCreateError('');
                   }}
                   disabled={saving || creatingCustomer}
                 >
                   <Plus size={15} />
-                  {t('sales.addNewCustomer')}
+                  {t('sales.recordCustomerInfo')}
                 </button>
 
                 {newCustomerOpen && (
@@ -1094,18 +1011,20 @@ export default function SalesPage({ token, setActivePage }) {
                       />
                     </label>
 
-                    <label>
-                      {t('customers.thAddress')}
-                      <input
-                        type="text"
-                        value={newCustomerAddress}
-                        onChange={(event) => setNewCustomerAddress(event.target.value)}
-                        maxLength={300}
-                        autoComplete="street-address"
-                        placeholder={t('customers.thAddress')}
-                        disabled={creatingCustomer}
-                      />
-                    </label>
+                    {paymentMode === 'partial' && (
+                      <label>
+                        {t('sales.amountPaid')}
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={paidAmount}
+                          onChange={(event) => setPaidAmount(event.target.value)}
+                          required
+                          disabled={saving}
+                        />
+                      </label>
+                    )}
 
                     {customerCreateError && (
                       <div className="sales-alert sales-alert-error" role="alert">
@@ -1121,7 +1040,6 @@ export default function SalesPage({ token, setActivePage }) {
                           setNewCustomerOpen(false);
                           setNewCustomerName('');
                           setNewCustomerPhone('');
-                          setNewCustomerAddress('');
                           setCustomerCreateError('');
                         }}
                         disabled={creatingCustomer}
@@ -1133,7 +1051,7 @@ export default function SalesPage({ token, setActivePage }) {
                         type="button"
                         className="primary-button"
                         onClick={handleQuickCustomerCreate}
-                        disabled={creatingCustomer || !newCustomerName.trim()}
+                        disabled={creatingCustomer || !newCustomerName.trim() || !newCustomerPhone.trim()}
                       >
                         {creatingCustomer
                           ? t('common.saving')
@@ -1150,49 +1068,21 @@ export default function SalesPage({ token, setActivePage }) {
 
               )}
 
-              {paymentMode === 'partial' && (
-              <label>
-                {t('sales.amountPaid')}
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={paidAmount}
-                  onChange={(event) => setPaidAmount(event.target.value)}
-                  required
-                  disabled={saving}
-                />
-              </label>
-              )}
-
               {Number(paidAmount) > 0 && (
-                <>
-                  <label>
-                    {t('sales.paymentMethod')}
-                    <select
-                      value={paymentMethod}
-                      onChange={(event) => setPaymentMethod(event.target.value)}
-                      disabled={saving}
-                    >
-                      {paymentMethods.map((method) => (
-                        <option key={method.value} value={method.value}>
-                          {t(`paymentMethods.${method.value}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
-                    {t('sales.paymentReference')}
-                    <input
-                      value={paymentReference}
-                      onChange={(event) => setPaymentReference(event.target.value)}
-                      maxLength={120}
-                      placeholder={t('sales.referencePh')}
-                      disabled={saving}
-                    />
-                  </label>
-                </>
+                <label>
+                  {t('sales.paymentMethod')}
+                  <select
+                    value={paymentMethod}
+                    onChange={(event) => setPaymentMethod(event.target.value)}
+                    disabled={saving}
+                  >
+                    {paymentMethods.map((method) => (
+                      <option key={method.value} value={method.value}>
+                        {t(`paymentMethods.${method.value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               )}
 
               {paymentMode !== 'full' && (

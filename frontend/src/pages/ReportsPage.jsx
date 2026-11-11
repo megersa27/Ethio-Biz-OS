@@ -67,6 +67,7 @@ function Metric({ label, value, icon: Icon, tone = '' }) {
   );
 }
 
+const REPORT_CACHE_KEY = 'ethioBiz.reports.cache';
 const REPORT_DATE_RANGE_KEY = 'ethiobiz-reports-date-range';
 
 const readSavedDateRange = () => {
@@ -100,16 +101,69 @@ export default function ReportsPage({ token }) {
   const [startDate, setStartDate] = useState(savedDateRange.startDate);
   const [endDate, setEndDate] = useState(savedDateRange.endDate);
   const [activeTab, setActiveTab] = useState('Overview');
-  const [summary, setSummary] = useState(null);
-  const [sales, setSales] = useState(null);
-  const [expenses, setExpenses] = useState(null);
-  const [profit, setProfit] = useState(null);
-  const [stock, setStock] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(REPORT_CACHE_KEY) || 'null');
+      return cached?.summary || null;
+    } catch {
+      return null;
+    }
+  });
+  const [sales, setSales] = useState(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(REPORT_CACHE_KEY) || 'null');
+      return cached?.sales || null;
+    } catch {
+      return null;
+    }
+  });
+  const [expenses, setExpenses] = useState(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(REPORT_CACHE_KEY) || 'null');
+      return cached?.expenses || null;
+    } catch {
+      return null;
+    }
+  });
+  const [profit, setProfit] = useState(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(REPORT_CACHE_KEY) || 'null');
+      return cached?.profit || null;
+    } catch {
+      return null;
+    }
+  });
+  const [stock, setStock] = useState(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(REPORT_CACHE_KEY) || 'null');
+      return cached?.stock || null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const loadReports = useCallback(async () => {
-    setLoading(true);
+    const cached = (() => {
+      try {
+        return JSON.parse(sessionStorage.getItem(REPORT_CACHE_KEY) || 'null');
+      } catch {
+        return null;
+      }
+    })();
+
+    if (cached) {
+      setSummary(cached.summary || null);
+      setSales(cached.sales || null);
+      setExpenses(cached.expenses || null);
+      setProfit(cached.profit || null);
+      setStock(cached.stock || null);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     setError('');
     const filters = {};
     if (startDate) filters.startDate = startDate;
@@ -123,11 +177,19 @@ export default function ReportsPage({ token }) {
         getProfitReport(token, filters),
         getBusinessStockReport(token),
       ]);
-      setSummary(results[0].report);
-      setSales(results[1].report);
-      setExpenses(results[2].report);
-      setProfit(results[3].report);
-      setStock(results[4].report);
+      const next = {
+        summary: results[0].report,
+        sales: results[1].report,
+        expenses: results[2].report,
+        profit: results[3].report,
+        stock: results[4].report,
+      };
+      sessionStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(next));
+      setSummary(next.summary);
+      setSales(next.sales);
+      setExpenses(next.expenses);
+      setProfit(next.profit);
+      setStock(next.stock);
     } catch (err) {
       setError(err.message || t('reports.errLoad'));
     } finally {
