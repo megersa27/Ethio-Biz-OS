@@ -876,6 +876,7 @@
 
 .sales-new-customer-form {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 12px;
   padding: 14px;
@@ -892,7 +893,8 @@
   font-weight: 650;
 }
 
-.sales-new-customer-form input {
+.sales-new-customer-form input,
+.sales-new-customer-form textarea {
   width: 100%;
   min-width: 0;
   padding: 10px 11px;
@@ -900,6 +902,11 @@
   background: var(--input-bg, var(--surface));
   border: 1px solid var(--border);
   border-radius: 9px;
+}
+
+.sales-customer-inline .sales-notes-field,
+.sales-customer-inline .sales-partial-amount-field {
+  grid-column: 1 / -1;
 }
 
 .sales-new-customer-actions {

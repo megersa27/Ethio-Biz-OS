@@ -51,9 +51,17 @@ export async function apiRequest(path, options = {}, timeoutMs = DEFAULT_TIMEOUT
   }
 
   if (!response.ok || !result.success) {
-    throw new Error(
-      result.message || `Request kufe (${response.status})`
-    );
+    const message = result.message || `Request kufe (${response.status})`;
+
+    if (response.status === 401 || /(invalid|expired).*token|authentication token/i.test(message)) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('ethioBizAccessToken');
+        sessionStorage.removeItem('ethioBizUser');
+        sessionStorage.removeItem('ethioBizBusiness');
+      }
+    }
+
+    throw new Error(message);
   }
 
   return result.data;

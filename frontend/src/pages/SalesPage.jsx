@@ -56,6 +56,30 @@ function writeStoredJson(key, value) {
 
 const moneyToMinor = (value) => Math.round(Number(value) * 100);
 
+const hasWholeNumberInput = (value) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && Number.isInteger(numeric) && numeric > 0;
+};
+
+const validateCustomerInfo = (name, phone, paymentMode, paidAmount, t) => {
+  const cleanName = String(name ?? '').trim();
+  const cleanPhone = String(phone ?? '').trim();
+
+  if (cleanName.length < 2 || !/^[\p{L}\p{N}\s'’\-\.]+$/u.test(cleanName)) {
+    return t('sales.customerInfoRequired');
+  }
+
+  if (!/^\+?[0-9\s\-]{7,15}$/.test(cleanPhone)) {
+    return t('sales.customerInfoRequired');
+  }
+
+  if (paymentMode === 'partial' && !hasWholeNumberInput(paidAmount)) {
+    return t('sales.partialAmountRequired');
+  }
+
+  return '';
+};
+
 const formatDate = (value) => {
   if (!value) return '—';
 
@@ -412,14 +436,10 @@ export default function SalesPage({ token, setActivePage }) {
 
     const name = newCustomerName.trim();
     const phone = newCustomerPhone.trim();
+    const customerValidationError = validateCustomerInfo(name, phone, paymentMode, paidAmount, t);
 
-    if (!name || !phone) {
-      setCustomerCreateError(t('sales.customerInfoRequired'));
-      return;
-    }
-
-    if (paymentMode === 'partial' && (!Number.isFinite(Number(paidAmount)) || Number(paidAmount) <= 0)) {
-      setCustomerCreateError(t('sales.partialAmountRequired'));
+    if (customerValidationError) {
+      setCustomerCreateError(customerValidationError);
       return;
     }
 
@@ -544,6 +564,11 @@ export default function SalesPage({ token, setActivePage }) {
         ? 0
         : totalAmountMinor / 100;
 
+    if (paymentMode === 'partial' && !hasWholeNumberInput(paidAmount)) {
+      setFormError(t('sales.partialAmountRequired'));
+      return;
+    }
+
     if (
       !Number.isFinite(paidEtb) ||
       paidEtb < 0 ||
@@ -564,13 +589,70 @@ export default function SalesPage({ token, setActivePage }) {
       return;
     }
 
-    if (paidAmountMinor < totalAmountMinor && !customerId) {
-      setFormError(t('sales.errCreditCustomer'));
+    if (paymentMode !== 'full' && notes.length > 500) {
+      setFormError(t('sales.errNotesLen'));
       return;
     }
 
-    if (paymentMode !== 'full' && notes.length > 500) {
-      setFormError(t('sales.errNotesLen'));
+    let resolvedCustomerId = customerId;
+
+    if (paymentMode !== 'full') {
+      const name = newCustomerName.trim();
+      const phone = newCustomerPhone.trim();
+      const customerValidationError = validateCustomerInfo(name, phone, paymentMode, paidAmount, t);
+
+      if (customerValidationError) {
+        setFormError(customerValidationError);
+        return;
+      }
+
+      try {
+        const existingCustomer = customers.find(
+          (customer) =>
+            String(customer.name || '').trim().toLowerCase() === name.toLowerCase() &&
+            String(customer.phone || '').trim() === phone
+        );
+
+        if (existingCustomer) {
+          resolvedCustomerId = String(existingCustomer._id);
+        } else {
+          const result = await createCustomer(token, { name, phone });
+          const refreshed = await getCustomers(token);
+          const rows = refreshed.customers || [];
+          setCustomers(rows);
+
+          const returnedCustomer =
+            result?.customer ||
+            result?.data?.customer ||
+            result?.data ||
+            result;
+
+          const savedCustomer = rows.find(
+            (customer) =>
+              String(customer._id) ===
+              String(returnedCustomer?._id || returnedCustomer?.id || '')
+          ) || [...rows].reverse().find(
+            (customer) =>
+              String(customer.name || '').trim().toLowerCase() === name.toLowerCase() &&
+              String(customer.phone || '').trim() === phone
+          );
+
+          if (!savedCustomer) {
+            throw new Error(t('sales.customerReloadError'));
+          }
+
+          resolvedCustomerId = String(savedCustomer._id);
+        }
+
+        setCustomerId(resolvedCustomerId);
+      } catch (error) {
+        setFormError(error.message || t('sales.customerCreateError'));
+        return;
+      }
+    }
+
+    if (paidAmountMinor < totalAmountMinor && !resolvedCustomerId) {
+      setFormError(t('sales.errCreditCustomer'));
       return;
     }
 
@@ -580,7 +662,7 @@ export default function SalesPage({ token, setActivePage }) {
       notes: paymentMode !== 'full' ? notes.trim() : '',
     };
 
-    if (customerId) saleData.customerId = customerId;
+    if (resolvedCustomerId) saleData.customerId = resolvedCustomerId;
 
     if (paidAmountMinor > 0) {
       saleData.paymentMethod = paymentMethod;
@@ -986,7 +1068,7 @@ export default function SalesPage({ token, setActivePage }) {
                     </label>
 
                     {paymentMode === 'partial' && (
-                      <label>
+                      <label className="sales-partial-amount-field">
                         {t('sales.amountPaid')}
                         <input
                           type="number"
@@ -1020,41 +1102,12 @@ export default function SalesPage({ token, setActivePage }) {
                       </div>
                     )}
 
-                    <div className="sales-new-customer-actions">
-                      <button
-                        type="button"
-                        className="primary-button"
-                        onClick={handleQuickCustomerCreate}
-                        disabled={creatingCustomer || !newCustomerName.trim() || !newCustomerPhone.trim()}
-                      >
-                        {creatingCustomer
-                          ? t('common.saving')
-                          : t('sales.saveCustomer')}
-                      </button>
-                    </div>
                   </div>
 
                   <span className="sales-field-help">
                     {t('sales.customerRequired')}
                   </span>
                 </div>
-              )}
-
-              {Number(paidAmount) > 0 && (
-                <label>
-                  {t('sales.paymentMethod')}
-                  <select
-                    value={paymentMethod}
-                    onChange={(event) => setPaymentMethod(event.target.value)}
-                    disabled={saving}
-                  >
-                    {paymentMethods.map((method) => (
-                      <option key={method.value} value={method.value}>
-                        {t(`paymentMethods.${method.value}`)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
               )}
 
             </div>

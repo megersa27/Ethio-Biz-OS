@@ -112,7 +112,7 @@ export default function CustomersPage({ token }) {
     const amountMinor = moneyToMinor(paidEtb);
     const balanceMinor = Number(paymentSale.balanceDueMinor || 0);
 
-    if (!Number.isFinite(paidEtb) || paidEtb <= 0 || amountMinor <= 0) {
+    if (!Number.isFinite(paidEtb) || !Number.isInteger(paidEtb) || paidEtb <= 0 || !Number.isFinite(amountMinor) || amountMinor <= 0) {
       setFormError(t('sales.errPaymentZero'));
       return;
     }

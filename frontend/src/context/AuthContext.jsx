@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
           });
         }
       } catch {
-        if (!cancelled && !cachedUser && !cachedBusiness) {
+        if (!cancelled) {
           clearStoredSession();
           setAuth(null);
         }
