@@ -213,7 +213,7 @@
 
 .sales-line {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(90px, 0.65fr) minmax(120px, 0.8fr) 36px;
+  grid-template-columns: minmax(0, 1.7fr) minmax(90px, 0.65fr) minmax(110px, 0.7fr) minmax(120px, 0.8fr) 36px;
   align-items: center;
   gap: 12px;
   padding: 14px;
@@ -223,8 +223,31 @@
 }
 
 .sales-product-field,
-.sales-quantity-field {
+.sales-quantity-field,
+.sales-payment-type-cell {
   min-width: 0;
+}
+
+.sales-payment-type-cell {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--text-primary, #273b31);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.sales-payment-type-cell select {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  color: var(--text-primary, #182b24);
+  background: var(--input-bg, #fff);
+  border: 1px solid var(--border, #dfe7e2);
+  border-radius: 10px;
+  outline: none;
+  font: inherit;
+  font-weight: 400;
 }
 
 .sales-line-total {
@@ -256,32 +279,6 @@
 .sales-remove-line:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.sales-total-strip {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 16px;
-  background: #f0f8f3;
-  border: 1px solid #d9ebdf;
-  border-radius: 12px;
-}
-
-.sales-total-strip div {
-  display: grid;
-  gap: 5px;
-}
-
-.sales-total-strip span {
-  color: #526d5e;
-  font-size: 0.78rem;
-}
-
-.sales-total-strip strong {
-  color: #176b4d;
-  font-size: 1.15rem;
-  font-variant-numeric: tabular-nums;
 }
 
 .sales-form-grid {
@@ -425,16 +422,38 @@
 
 .sales-form-footer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 3px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border, #e7ece9);
 }
 
-.sales-form-footer > span {
+.sales-total-summary {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sales-total-summary span {
   color: var(--text-secondary, #687970);
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.sales-total-summary strong {
+  color: var(--text-primary, #182b24);
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-form-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .sales-form-footer button {
@@ -626,7 +645,7 @@
 
 @media (max-width: 950px) {
   .sales-line {
-    grid-template-columns: minmax(0, 1.5fr) minmax(90px, 0.7fr) minmax(100px, 0.7fr) 34px;
+    grid-template-columns: minmax(0, 1.5fr) minmax(90px, 0.7fr) minmax(95px, 0.7fr) minmax(100px, 0.7fr) 34px;
     gap: 9px;
     padding: 11px;
   }
@@ -642,19 +661,23 @@
   }
 
   .sales-line {
-    grid-template-columns: minmax(0, 1fr) minmax(100px, 0.5fr) 34px;
+    grid-template-columns: minmax(0, 1fr) minmax(100px, 0.5fr) minmax(120px, 0.5fr) 34px;
   }
 
   .sales-product-field {
     grid-column: 1 / -1;
   }
 
+  .sales-payment-type-cell {
+    grid-column: 1 / 2;
+  }
+
   .sales-line-total {
-    grid-column: 1 / 3;
+    grid-column: 2 / 4;
   }
 
   .sales-remove-line {
-    grid-column: 3;
+    grid-column: 4;
     grid-row: 2;
   }
 

@@ -905,6 +905,35 @@ export default function SalesPage({ token, setActivePage }) {
                       />
                     </label>
 
+                    <div className="sales-payment-type-cell">
+                      <label htmlFor={`sales-payment-mode-${index}`}>
+                        {t('sales.paymentType')}
+                      </label>
+                      <select
+                        id={`sales-payment-mode-${index}`}
+                        value={paymentMode}
+                        onChange={(event) => {
+                          const mode = event.target.value;
+                          setPaymentMode(mode);
+                          setPaidAmount(
+                            mode === 'partial'
+                              ? (totalAmountMinor / 100).toFixed(2)
+                              : ''
+                          );
+
+                          if (mode === 'full') {
+                            setCustomerId('');
+                            setNotes('');
+                          }
+                        }}
+                        disabled={saving}
+                      >
+                        <option value="full">{t('sales.fullPayment')}</option>
+                        <option value="partial">{t('sales.partialPayment')}</option>
+                        <option value="credit">{t('sales.creditSale')}</option>
+                      </select>
+                    </div>
+
                     <div className="sales-line-total">
                       <span>{t('sales.lineTotal')}</span>
                       <strong>{formatMinor(lineTotal)}</strong>
@@ -925,64 +954,9 @@ export default function SalesPage({ token, setActivePage }) {
               })}
             </div>
 
-            <div className="sales-total-strip">
-              <div>
-                <span>{t('sales.saleTotal')}</span>
-                <strong>{formatMinor(totalAmountMinor)}</strong>
-              </div>
-              <div>
-                <span>{t('sales.productsSelected')}</span>
-                <strong>{items.filter((item) => item.productId).length}</strong>
-              </div>
-            </div>
-
             <div className="sales-form-grid">
-            <div className="sales-payment-mode">
-              <label htmlFor="sales-payment-mode">
-                {t('sales.paymentType')}
-              </label>
-              <select
-                id="sales-payment-mode"
-                value={paymentMode}
-                onChange={(event) => {
-                  const mode = event.target.value;
-                  setPaymentMode(mode);
-                  setPaidAmount(
-                    mode === 'partial'
-                      ? (totalAmountMinor / 100).toFixed(2)
-                      : ''
-                  );
-
-                  if (mode === 'full') {
-                    setCustomerId('');
-                    setNotes('');
-                  }
-                }}
-                disabled={saving}
-              >
-                <option value="full">{t('sales.fullPayment')}</option>
-                <option value="partial">{t('sales.partialPayment')}</option>
-                <option value="credit">{t('sales.creditSale')}</option>
-              </select>
-            </div>
-
-
               {paymentMode !== 'full' && (
-              <div className="sales-customer-field">
-                <button
-                  type="button"
-                  className="sales-add-customer"
-                  onClick={() => {
-                    setNewCustomerOpen((value) => !value);
-                    setCustomerCreateError('');
-                  }}
-                  disabled={saving || creatingCustomer}
-                >
-                  <Plus size={15} />
-                  {t('sales.recordCustomerInfo')}
-                </button>
-
-                {newCustomerOpen && (
+                <div className="sales-customer-field sales-customer-inline">
                   <div className="sales-new-customer-form">
                     <label>
                       {t('customers.thCustomer')}
@@ -1026,6 +1000,20 @@ export default function SalesPage({ token, setActivePage }) {
                       </label>
                     )}
 
+                    {paymentMode !== 'full' && (
+                      <label className="sales-notes-field">
+                        {t('sales.notesOptional')}
+                        <textarea
+                          value={notes}
+                          onChange={(event) => setNotes(event.target.value)}
+                          maxLength={500}
+                          rows={2}
+                          placeholder={t('sales.notesPh')}
+                          disabled={saving}
+                        />
+                      </label>
+                    )}
+
                     {customerCreateError && (
                       <div className="sales-alert sales-alert-error" role="alert">
                         {customerCreateError}
@@ -1033,20 +1021,6 @@ export default function SalesPage({ token, setActivePage }) {
                     )}
 
                     <div className="sales-new-customer-actions">
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => {
-                          setNewCustomerOpen(false);
-                          setNewCustomerName('');
-                          setNewCustomerPhone('');
-                          setCustomerCreateError('');
-                        }}
-                        disabled={creatingCustomer}
-                      >
-                        {t('common.cancel')}
-                      </button>
-
                       <button
                         type="button"
                         className="primary-button"
@@ -1059,13 +1033,11 @@ export default function SalesPage({ token, setActivePage }) {
                       </button>
                     </div>
                   </div>
-                )}
 
-                <span className="sales-field-help">
-                  {t('sales.customerRequired')}
-                </span>
-              </div>
-
+                  <span className="sales-field-help">
+                    {t('sales.customerRequired')}
+                  </span>
+                </div>
               )}
 
               {Number(paidAmount) > 0 && (
@@ -1085,19 +1057,6 @@ export default function SalesPage({ token, setActivePage }) {
                 </label>
               )}
 
-              {paymentMode !== 'full' && (
-              <label className="sales-notes-field">
-                {t('sales.notesOptional')}
-                <textarea
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  maxLength={500}
-                  rows={2}
-                  placeholder={t('sales.notesPh')}
-                  disabled={saving}
-                />
-              </label>
-              )}
             </div>
 
             {formError && !paymentSale && (
@@ -1108,14 +1067,20 @@ export default function SalesPage({ token, setActivePage }) {
             )}
 
             <div className="sales-form-footer">
-              <span>{t('sales.reviewBefore')}</span>
-              <button
-                className="primary-button"
-                type="submit"
-                disabled={saving || loading}
-              >
-                {saving ? t('common.saving') : <><ShoppingCart size={16} /> {t('sales.recordSaleBtn')}</>}
-              </button>
+              <div className="sales-total-summary">
+                <span>{t('sales.saleTotal')}</span>
+                <strong>{formatMinor(totalAmountMinor)}</strong>
+              </div>
+
+              <div className="sales-form-footer-actions">
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={saving || loading}
+                >
+                  {saving ? t('common.saving') : <><ShoppingCart size={16} /> {t('sales.recordSaleBtn')}</>}
+                </button>
+              </div>
             </div>
 
             {notice && !paymentSale && (
