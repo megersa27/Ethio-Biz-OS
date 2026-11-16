@@ -22,7 +22,7 @@ import {
   recordSalePayment,
 } from '../services/api.js';
 
-import { formatMinor } from '../utils/currency.js';
+import { formatMinor, parseMoneyToMinor } from '../utils/currency.js';
 import { groupSalesByDay } from '../utils/salesHistory.js';
 import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 import './SalesPage.css';
@@ -54,7 +54,7 @@ function writeStoredJson(key, value) {
   }
 }
 
-const moneyToMinor = (value) => Math.round(Number(value) * 100);
+const moneyToMinor = parseMoneyToMinor;
 
 const hasWholeNumberInput = (value) => {
   const numeric = Number(value);
@@ -372,6 +372,18 @@ export default function SalesPage({ token, setActivePage }) {
     0
   );
 
+  const creditAmountMinor = useMemo(() => {
+    if (paymentMode === 'full') return 0;
+    if (paymentMode === 'credit') return totalAmountMinor;
+
+    const paid = Number(paidAmount);
+    if (!Number.isFinite(paid) || paid < 0) {
+      return totalAmountMinor;
+    }
+
+    return Math.max(0, totalAmountMinor - moneyToMinor(paid));
+  }, [paidAmount, paymentMode, totalAmountMinor]);
+
   function updateItem(index, field, value) {
     setItems((current) =>
       current.map((item, itemIndex) =>
@@ -687,7 +699,7 @@ export default function SalesPage({ token, setActivePage }) {
   function openPaymentForm(sale) {
     setPaymentSale(sale);
     setAdditionalPayment(
-      (Number(sale.balanceDueMinor || 0) / 100).toFixed(2)
+      String(Number(sale.balanceDueMinor || 0) / 100)
     );
     setAdditionalPaymentMethod('cash');
     setAdditionalReference('');
@@ -1080,6 +1092,13 @@ export default function SalesPage({ token, setActivePage }) {
                           disabled={saving}
                         />
                       </label>
+                    )}
+
+                    {paymentMode !== 'full' && (
+                      <div className="sales-credit-amount-summary">
+                        <span>{t('sales.amountDue')}</span>
+                        <strong>{formatMinor(creditAmountMinor)}</strong>
+                      </div>
                     )}
 
                     {paymentMode !== 'full' && (

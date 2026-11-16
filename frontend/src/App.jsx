@@ -363,6 +363,7 @@ export default function App() {
                   token={auth.accessToken}
                   period={period}
                   setPeriod={setPeriod}
+                  refreshKey={dashboardRefresh}
                 />
                 <StockAlerts
                   items={lowStockItems}

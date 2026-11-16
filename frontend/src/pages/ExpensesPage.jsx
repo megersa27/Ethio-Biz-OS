@@ -21,7 +21,7 @@ import {
   updateExpense,
 } from '../services/api.js';
 
-import { formatMinor } from '../utils/currency.js';
+import { formatMinor, parseMoneyToMinor } from '../utils/currency.js';
 import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 import './ExpensesPage.css';
 
@@ -46,19 +46,7 @@ function localToday() {
     .slice(0, 10);
 }
 
-function moneyToMinor(value) {
-  const normalized = typeof value === 'string'
-    ? value.replace(/,/g, '').trim()
-    : String(value ?? '').trim();
-
-  const parsed = Number(normalized);
-
-  if (!Number.isFinite(parsed)) {
-    return NaN;
-  }
-
-  return Math.round((parsed + Number.EPSILON) * 100);
-}
+const moneyToMinor = parseMoneyToMinor;
 
 function emptyForm() {
   return {
@@ -226,7 +214,7 @@ export default function ExpensesPage({ token }) {
     setForm({
       category: isStandard ? category : 'Other',
       customCategory: isStandard ? '' : category,
-      amount: (Number(expense.amountMinor || 0) / 100).toFixed(2),
+      amount: String(Number(expense.amountMinor || 0) / 100),
       date: expense.date ? new Date(expense.date).toISOString().slice(0, 10) : localToday(),
       description: expense.description || '',
     });

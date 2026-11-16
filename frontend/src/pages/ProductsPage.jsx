@@ -16,6 +16,7 @@ import {
   getProducts,
   updateProduct,
 } from '../services/api.js';
+import { formatETB, parseMoneyToMinor } from '../utils/currency.js';
 import { useAutoDismissNotice } from '../utils/useAutoDismissNotice.js';
 
 import './ProductsPage.css';
@@ -72,14 +73,6 @@ const categoryOptions = [
   'Other',
 ];
 
-const formatETB = (minor) =>
-  new Intl.NumberFormat('en-ET', {
-    style: 'currency',
-    currency: 'ETB',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format((Number(minor) || 0) / 100);
-
 export default function ProductsPage({ token }) {
   const { t } = useTranslation();
   const [products, setProducts] = useState(() => readStoredJson(PRODUCTS_CACHE_KEY, []));
@@ -99,7 +92,7 @@ export default function ProductsPage({ token }) {
       throw new Error(fieldName === 'Cost price' ? t('products.errCost') : t('products.errSelling'));
     }
 
-    const minor = Math.round(Number(value) * 100);
+    const minor = parseMoneyToMinor(value);
 
     if (!Number.isSafeInteger(minor)) {
       throw new Error(fieldName === 'Cost price' ? t('products.errCostLarge') : t('products.errSellingLarge'));
@@ -161,8 +154,8 @@ export default function ProductsPage({ token }) {
       name: product.name || '',
       category: product.category || 'General',
       unit: product.unit || 'piece',
-      costPrice: ((product.costPriceMinor || 0) / 100).toFixed(2),
-      sellingPrice: ((product.sellingPriceMinor || 0) / 100).toFixed(2),
+      costPrice: String((Number(product.costPriceMinor || 0) / 100)),
+      sellingPrice: String((Number(product.sellingPriceMinor || 0) / 100)),
       stockQuantity: String(product.stockQuantity ?? 0),
       minimumStockLevel: String(product.minimumStockLevel ?? 0),
     });

@@ -198,7 +198,7 @@ function writeChartCache(period, value) {
   }
 }
 
-function SalesChart({ period, setPeriod, token }) {
+function SalesChart({ period, setPeriod, token, refreshKey = 0 }) {
   const { t } = useTranslation();
   const [chartData, setChartData] = useState(() => readChartCache('This week')?.data || []);
   const [periodSalesMinor, setPeriodSalesMinor] = useState(() => readChartCache('This week')?.salesMinor || 0);
@@ -211,7 +211,7 @@ function SalesChart({ period, setPeriod, token }) {
     let cancelled = false;
 
     async function loadChart() {
-      const cachedChart = readChartCache(period);
+      const cachedChart = refreshKey === 0 ? readChartCache(period) : null;
       if (cachedChart) {
         setChartData(cachedChart.data || []);
         setPeriodSalesMinor(cachedChart.salesMinor || 0);
@@ -293,7 +293,7 @@ function SalesChart({ period, setPeriod, token }) {
     }
 
     return () => { cancelled = true; };
-  }, [period, token]);
+  }, [period, token, refreshKey]);
 
   const periodLabel =
     period === 'Today'

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Search, UserRound, X } from 'lucide-react';
 
 import { getCustomers, getSales, recordSalePayment } from '../services/api.js';
-import { formatMinor } from '../utils/currency.js';
+import { formatMinor, parseMoneyToMinor } from '../utils/currency.js';
 import './CustomersPage.css';
 
 const paymentMethods = [
@@ -32,7 +32,7 @@ function writeStoredJson(key, value) {
   }
 }
 
-const moneyToMinor = (value) => Math.round(Number(value) * 100);
+const moneyToMinor = parseMoneyToMinor;
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -72,7 +72,7 @@ export default function CustomersPage({ token }) {
 
     setPaymentSale(sale);
     setAdditionalPayment(
-      (Number(sale.balanceDueMinor || 0) / 100).toFixed(2)
+      String(Number(sale.balanceDueMinor || 0) / 100)
     );
     setAdditionalPaymentMethod('cash');
     setAdditionalReference('');
@@ -529,7 +529,10 @@ export default function CustomersPage({ token }) {
                     <td>{customer.address || '—'}</td>
                     <td>{customer.lastPaymentDate ? formatDate(customer.lastPaymentDate) : '—'}</td>
                     <td className="customers-outstanding">
-                      <strong>{formatMinor(customer.balanceDueMinor)}</strong>
+                      <div className="customers-outstanding-value">
+                        <span>{t('customers.thOutstanding')}</span>
+                        <strong>{formatMinor(customer.balanceDueMinor)}</strong>
+                      </div>
                     </td>
                     <td className="customers-actions-cell">
                       {customer.balanceDueMinor > 0 && customer.paymentTargetSale ? (
