@@ -43,6 +43,11 @@ export default function HelpPage({ onGoToDashboard, onOpenSettings }) {
     t('help.step4'),
   ];
 
+  const developerContact = [
+    { label: 'Phone', value: '0927741093' },
+    { label: 'Email', value: 'megersatekalign95@gmail.com' },
+  ];
+
   return (
     <section className="help-page">
       <div className="page-heading">
@@ -92,6 +97,18 @@ export default function HelpPage({ onGoToDashboard, onOpenSettings }) {
           </article>
         ))}
       </div>
+
+      <article className="panel help-panel">
+        <div className="help-panel-header">
+          <BookOpen size={18} />
+          <h2>Contact us</h2>
+        </div>
+        <ul className="help-list">
+          {developerContact.map(({ label, value }) => (
+            <li key={label}><strong>{label}:</strong> {value}</li>
+          ))}
+        </ul>
+      </article>
 
       <div className="help-actions">
         <button type="button" className="primary-button" onClick={onGoToDashboard}>

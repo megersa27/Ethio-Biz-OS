@@ -139,7 +139,7 @@ export default function Topbar({
               <button
                 type="button"
                 className="notification-item"
-                onClick={() => openPage('Inventory')}
+                onClick={() => openPage('inventory')}
               >
                 <span className="notification-symbol warning">
                   <AlertTriangle size={17} />
@@ -158,7 +158,7 @@ export default function Topbar({
               <button
                 type="button"
                 className="notification-item"
-                onClick={() => openPage('Sales')}
+                onClick={() => openPage('sales')}
               >
                 <span className="notification-symbol credit">
                   <Wallet size={17} />
@@ -224,7 +224,7 @@ export default function Topbar({
                   setProfileOpen(false);
                 }}
               >
-                <Settings size={17} /> {t('topbar.settingsProfile')}
+                <Settings size={17} /> Edit profile
               </button>
 
               <button

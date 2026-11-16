@@ -61,15 +61,17 @@ const hasWholeNumberInput = (value) => {
   return Number.isFinite(numeric) && Number.isInteger(numeric) && numeric > 0;
 };
 
+const normalizePhone = (value) => String(value ?? '').replace(/\D/g, '').slice(0, 10);
+
 const validateCustomerInfo = (name, phone, paymentMode, paidAmount, t) => {
   const cleanName = String(name ?? '').trim();
-  const cleanPhone = String(phone ?? '').trim();
+  const cleanPhone = normalizePhone(phone);
 
   if (cleanName.length < 2 || !/^[\p{L}\p{N}\s'’\-\.]+$/u.test(cleanName)) {
     return t('sales.customerInfoRequired');
   }
 
-  if (!/^\+?[0-9\s\-]{7,15}$/.test(cleanPhone)) {
+  if (!/^\d{10}$/.test(cleanPhone)) {
     return t('sales.customerInfoRequired');
   }
 
@@ -435,7 +437,7 @@ export default function SalesPage({ token, setActivePage }) {
     setCustomerCreateError('');
 
     const name = newCustomerName.trim();
-    const phone = newCustomerPhone.trim();
+    const phone = normalizePhone(newCustomerPhone);
     const customerValidationError = validateCustomerInfo(name, phone, paymentMode, paidAmount, t);
 
     if (customerValidationError) {
@@ -598,7 +600,7 @@ export default function SalesPage({ token, setActivePage }) {
 
     if (paymentMode !== 'full') {
       const name = newCustomerName.trim();
-      const phone = newCustomerPhone.trim();
+      const phone = normalizePhone(newCustomerPhone);
       const customerValidationError = validateCustomerInfo(name, phone, paymentMode, paidAmount, t);
 
       if (customerValidationError) {
@@ -997,11 +999,7 @@ export default function SalesPage({ token, setActivePage }) {
                         onChange={(event) => {
                           const mode = event.target.value;
                           setPaymentMode(mode);
-                          setPaidAmount(
-                            mode === 'partial'
-                              ? (totalAmountMinor / 100).toFixed(2)
-                              : ''
-                          );
+                          setPaidAmount(mode === 'partial' ? '' : '');
 
                           if (mode === 'full') {
                             setCustomerId('');
@@ -1021,16 +1019,18 @@ export default function SalesPage({ token, setActivePage }) {
                       <strong>{formatMinor(lineTotal)}</strong>
                     </div>
 
-                    <button
-                      type="button"
-                      className="sales-remove-line"
-                      onClick={() => removeItem(index)}
-                      disabled={saving}
-                      aria-label={t('sales.removeLineAria', { index: index + 1 })}
-                      title={t('sales.removeItem')}
-                    >
-                      <Trash2 size={17} />
-                    </button>
+                    {item.productId && (
+                      <button
+                        type="button"
+                        className="sales-remove-line"
+                        onClick={() => removeItem(index)}
+                        disabled={saving}
+                        aria-label={t('sales.removeLineAria', { index: index + 1 })}
+                        title={t('sales.removeItem')}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -1059,8 +1059,8 @@ export default function SalesPage({ token, setActivePage }) {
                       <input
                         type="tel"
                         value={newCustomerPhone}
-                        onChange={(event) => setNewCustomerPhone(event.target.value)}
-                        maxLength={30}
+                        onChange={(event) => setNewCustomerPhone(normalizePhone(event.target.value))}
+                        maxLength={10}
                         autoComplete="tel"
                         placeholder={t('customers.thPhone')}
                         disabled={creatingCustomer}

@@ -448,7 +448,7 @@ function StockAlerts({ items, setActivePage, loading }) {
       </div>
 
       <div className="panel-footer">
-        <button className="text-link" onClick={() => setActivePage('Inventory')}>
+        <button className="text-link" onClick={() => setActivePage('inventory')}>
           {t('stockAlerts.viewInventory')} <ArrowRight size={14} />
         </button>
       </div>
@@ -488,7 +488,7 @@ function RecentSales({ sales, search = '', setActivePage, loading }) {
             {t('recentSales.subtitle')}
           </p>
         </div>
-        <button className="secondary-button" onClick={() => setActivePage('Sales')}>
+        <button className="secondary-button" onClick={() => setActivePage('sales')}>
           {t('recentSales.viewAll')} <ArrowRight size={14} />
         </button>
       </div>
@@ -536,7 +536,7 @@ function RecentSales({ sales, search = '', setActivePage, loading }) {
 
       <div className="table-bottom">
         <p>{t('recentSales.showingTx', { shown: filteredSales.length, total: sales.length })}</p>
-        <button className="text-link" onClick={() => setActivePage('Reports')}>
+        <button className="text-link" onClick={() => setActivePage('reports')}>
           {t('recentSales.salesReport')} <ArrowRight size={13} />
         </button>
       </div>

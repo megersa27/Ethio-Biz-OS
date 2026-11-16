@@ -16,10 +16,12 @@
     "dashboard": "Dashboard",
     "pageOf": "Page {{page}} of {{total}}",
     "showingOf": "Showing {{shown}} of {{total}} {{item}}",
-    "records": "records"
+    "records": "records",
+    "dateUnavailable": "Date unavailable"
   },
   "nav": {
     "workspace": "Workspace",
+    "brandCaption": "Business management made simple",
     "preferences": "Preferences",
     "dashboard": "Dashboard",
     "sales": "Sales",
@@ -122,6 +124,7 @@
     "errEmailOrPhone": "Please enter an email address or phone number.",
     "errPasswordLen": "Your password must contain at least 12 characters.",
     "errGeneric": "Something went wrong. Please try again.",
+    "checkingSession": "Checking your session...",
     "successRegister": "Your business account has been created. Please sign in."
   },
   "dashboard": {
@@ -172,6 +175,7 @@
   "stockAlerts": {
     "title": "Low stock alerts",
     "subtitle": "Products that need attention",
+    "belowReorder": "Below reorder level",
     "empty": "No low-stock products found.",
     "loadingInv": "Loading inventory…",
     "viewInventory": "View inventory"

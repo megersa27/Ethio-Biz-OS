@@ -45,7 +45,7 @@ const emptyForm = {
   unit: 'piece',
   costPrice: '',
   sellingPrice: '',
-  stockQuantity: '0',
+  stockQuantity: '',
   minimumStockLevel: '5',
 };
 
@@ -192,7 +192,7 @@ export default function ProductsPage({ token }) {
 
     try {
       const minimumStockLevel = Number(form.minimumStockLevel);
-      const stockQuantity = Number(form.stockQuantity);
+      const stockQuantity = form.stockQuantity === '' ? 0 : Number(form.stockQuantity);
 
       if (!Number.isFinite(minimumStockLevel) || minimumStockLevel < 0) {
         throw new Error(t('products.errMinStock'));

@@ -129,6 +129,20 @@
   font-weight: 700;
 }
 
+.dashboard-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--green);
+  font-weight: 700;
+}
+
 .help-page {
   display: grid;
   gap: 20px;
@@ -1540,4 +1554,94 @@
     width: 38px;
     padding: 0;
   }
+}
+
+/* ====================================================
+   Interaction & accessibility polish (additive layer)
+   Kept intentionally conservative so it layers on top of
+   the existing design without restyling it.
+   ==================================================== */
+
+/* Consistent, visible keyboard focus ring for interactive controls. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Inputs feel responsive on focus without a heavy restyle. */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-light);
+}
+
+/* Respect users who prefer reduced motion: disable non-essential animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Refined scrollbars for data tables and scrollable panels. */
+.table-scroll,
+.customers-table-wrap,
+.chart-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.table-scroll::-webkit-scrollbar,
+.customers-table-wrap::-webkit-scrollbar,
+.chart-wrap::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb,
+.customers-table-wrap::-webkit-scrollbar-thumb,
+.chart-wrap::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover,
+.customers-table-wrap::-webkit-scrollbar-thumb:hover,
+.chart-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-soft);
+  background-clip: padding-box;
+}
+
+/* Gentle lift for clickable cards on hover (only when motion is allowed). */
+.stat-card,
+.panel {
+  cursor: default;
+}
+
+/* Clearer disabled state across primary/secondary buttons. */
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Selection color matches the brand. */
+::selection {
+  background: var(--green-light);
+  color: var(--green-strong);
 }

@@ -47,30 +47,8 @@ const formatDate = (value) => {
 };
 
 async function loadAllSales(token) {
-  const allSales = [];
-  let page = 1;
-
-  while (true) {
-    const result = await getSales(token, { page, limit: 100 });
-    const rows = result.sales || [];
-    allSales.push(...rows);
-
-    const totalPages = Number(result.pagination?.totalPages || 0);
-
-    if (totalPages > 0) {
-      if (page >= totalPages) break;
-    } else if (rows.length < 200) {
-      break;
-    }
-
-    page += 1;
-
-    if (page > 1000) {
-      throw new Error('Too many sales pages to load safely.');
-    }
-  }
-
-  return allSales;
+  const result = await getSales(token, { page: 1, limit: 50 });
+  return result.sales || [];
 }
 
 export default function CustomersPage({ token }) {
@@ -79,6 +57,7 @@ export default function CustomersPage({ token }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const [paymentSale, setPaymentSale] = useState(null);
   const [additionalPayment, setAdditionalPayment] = useState('');
   const [additionalPaymentMethod, setAdditionalPaymentMethod] = useState('cash');
@@ -330,7 +309,7 @@ export default function CustomersPage({ token }) {
     return () => {
       cancelled = true;
     };
-  }, [token, t]);
+  }, [token, refreshKey, t]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -358,6 +337,15 @@ export default function CustomersPage({ token }) {
           <h1>{t('customers.title')}</h1>
           <p>{t('customers.lead')}</p>
         </div>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => setRefreshKey((value) => value + 1)}
+          disabled={loading}
+        >
+          <Search size={16} />
+          {loading ? t('common.loading') : t('common.refresh')}
+        </button>
       </div>
 
       {error && (

@@ -1,3 +1,5 @@
+import i18n from '../i18n.js';
+
 const API_BASE_URL = '/api';
 const DEFAULT_TIMEOUT_MS = 60000;
 
@@ -34,10 +36,10 @@ export async function apiRequest(path, options = {}, timeoutMs = DEFAULT_TIMEOUT
     });
   } catch (error) {
     if (error?.name === 'AbortError') {
-      throw new Error('The backend is not responding. Please make sure the backend server is running, then try again.');
+      throw new Error(i18n.t('errors.network'));
     }
 
-    throw new Error('Unable to reach the backend. Please make sure the backend server is running, then try again.');
+    throw new Error(i18n.t('errors.network'));
   } finally {
     clearTimeout(timeoutId);
   }
@@ -47,11 +49,11 @@ export async function apiRequest(path, options = {}, timeoutMs = DEFAULT_TIMEOUT
   try {
     result = await response.json();
   } catch {
-    throw new Error('Deebiin server irraa dhufe sirrii miti.');
+    throw new Error(i18n.t('errors.parse'));
   }
 
   if (!response.ok || !result.success) {
-    const message = result.message || `Request kufe (${response.status})`;
+    const message = result.message || i18n.t('errors.requestFailed', { status: response.status });
 
     if (response.status === 401 || /(invalid|expired).*token|authentication token/i.test(message)) {
       if (typeof window !== 'undefined') {

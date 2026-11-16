@@ -56,7 +56,8 @@ async function registerBusiness(input = {}) {
   }
 
   const normalizedEmail = email?.trim().toLowerCase() || null;
-  const normalizedPhone = phone?.trim() || null;
+  const rawPhone = phone?.trim() || null;
+  const normalizedPhone = rawPhone ? rawPhone.replace(/\D/g, "") : null;
 
   if (!normalizedEmail && !normalizedPhone) {
     const error = new Error("Email or phone number is required");
@@ -73,14 +74,20 @@ async function registerBusiness(input = {}) {
     throw error;
   }
 
-  if (normalizedPhone && normalizedPhone.length > 30) {
-    const error = new Error("Phone number cannot exceed 30 characters");
+  if (rawPhone && normalizedPhone && normalizedPhone.length !== 10) {
+    const error = new Error("Phone number must be exactly 10 digits");
     error.statusCode = 400;
     throw error;
   }
 
-  if (typeof password !== "string" || password.length < 12) {
-    const error = new Error("Password must be at least 12 characters");
+  if (rawPhone && !normalizedPhone) {
+    const error = new Error("Phone number must be exactly 10 digits");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (typeof password !== "string" || password.length < 8) {
+    const error = new Error("Password must be at least 8 characters");
     error.statusCode = 400;
     throw error;
   }
@@ -178,8 +185,6 @@ async function registerBusiness(input = {}) {
 // ======================================================
 
 async function loginUser(input = {}) {
-  console.log("[LOGIN DEBUG] Validating input");
-
   // 1. Validate input.
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     const error = new Error("A valid login object is required");
@@ -209,46 +214,23 @@ async function loginUser(input = {}) {
     : { phone: normalizedIdentifier };
 
   try {
-    // 2. Check MongoDB connection.
-    console.log(
-      "[LOGIN DEBUG] Mongoose readyState:",
-      User.db.readyState
-    );
-
+    // 2. Confirm the database connection is ready.
     if (User.db.readyState !== 1) {
       const error = new Error("Database connection is not ready");
       error.statusCode = 503;
       throw error;
     }
 
-    console.time("[LOGIN DEBUG] MongoDB ping");
-
     await User.db.db.admin().ping();
 
-    console.timeEnd("[LOGIN DEBUG] MongoDB ping");
-
-    // 3. Look up the user directly in MongoDB.
-    // This bypasses Mongoose's query layer for diagnosis.
-    console.log("[LOGIN DEBUG] Starting native MongoDB lookup");
-    console.log("[LOGIN DEBUG] Collection:", User.collection.name);
-    console.log("[LOGIN DEBUG] Query field:", isEmail ? "email" : "phone");
-
+    // 3. Look up the user by email or phone.
     const nativeUserCollection = User.db.db.collection(
       User.collection.name
     );
 
-    console.time("[LOGIN DEBUG] Native MongoDB lookup");
-
     const user = await nativeUserCollection.findOne(
       userQuery,
       { maxTimeMS: 10000 }
-    );
-
-    console.timeEnd("[LOGIN DEBUG] Native MongoDB lookup");
-
-    console.log(
-      "[LOGIN DEBUG] Native lookup completed:",
-      Boolean(user)
     );
 
     if (!user) {
@@ -258,8 +240,6 @@ async function loginUser(input = {}) {
     }
 
     // 4. Verify password.
-    console.log("[LOGIN DEBUG] Comparing password");
-
     if (!user.passwordHash) {
       throw new Error("Password hash is missing from the user record");
     }
@@ -267,11 +247,6 @@ async function loginUser(input = {}) {
     const passwordMatches = await comparePassword(
       password,
       user.passwordHash
-    );
-
-    console.log(
-      "[LOGIN DEBUG] Password comparison completed:",
-      passwordMatches
     );
 
     if (!passwordMatches) {
@@ -288,14 +263,7 @@ async function loginUser(input = {}) {
     }
 
     // 6. Find associated business.
-    console.log("[LOGIN DEBUG] Finding business");
-
     const business = await Business.findById(user.businessId);
-
-    console.log(
-      "[LOGIN DEBUG] Business lookup completed:",
-      Boolean(business)
-    );
 
     if (!business || !business.isActive) {
       const error = new Error("This business account is inactive");
@@ -304,8 +272,6 @@ async function loginUser(input = {}) {
     }
 
     // 7. Generate JWT.
-    console.log("[LOGIN DEBUG] Generating access token");
-
     if (!user.businessId) {
       const error = new Error("This account is not linked to a business yet");
       error.statusCode = 401;
@@ -314,7 +280,6 @@ async function loginUser(input = {}) {
 
     try {
       const accessToken = generateToken(user);
-      console.log("[LOGIN DEBUG] Login completed successfully");
 
       // 8. Return login response.
       return {
@@ -343,11 +308,8 @@ async function loginUser(input = {}) {
       }
       throw error;
     }
-
-    console.log("[LOGIN DEBUG] Login completed successfully");
-
   } catch (error) {
-    console.error("[LOGIN DEBUG] Login failed:", error.message);
+    console.error("Login failed:", error.message);
     throw error;
   }
 }

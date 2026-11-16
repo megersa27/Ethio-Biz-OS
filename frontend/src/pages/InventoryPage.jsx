@@ -196,7 +196,10 @@ export default function InventoryPage({ token }) {
         });
       } catch (error) {
         if (!cancelled) {
-          setPageError(error.message || t('inventory.errLoad'));
+          const hasCachedData = Boolean(cachedProducts || cachedMovements || cachedPagination);
+          if (!hasCachedData) {
+            setPageError(error.message || t('inventory.errLoad'));
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);

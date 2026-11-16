@@ -16,10 +16,12 @@
     "dashboard": "Daashboordii",
     "pageOf": "Fuulaa {{page}} / {{total}}",
     "showingOf": "{{total}} {{item}} irraa {{shown}} agarsiisa",
-    "records": "galmeewwan"
+    "records": "galmeewwan",
+    "dateUnavailable": "Guyyaan hin argamu"
   },
   "nav": {
     "workspace": "Iddoo hojii",
+    "brandCaption": "Bulchiinsa daldalaa salphate",
     "preferences": "Filannoo",
     "dashboard": "Daashboordii",
     "sales": "Gurgurtaa",
@@ -122,6 +124,7 @@
     "errEmailOrPhone": "Teessoo imeelii ykn lakkoofsa bilbilaa galchi.",
     "errPasswordLen": "Jecha iccittiin qubeewwan 12 of keessaa qabaachuu qaba.",
     "errGeneric": "Waanti dogoggora ta'e raawwate. Irri yaali.",
+    "checkingSession": "Seensa kee qabaanne...",
     "successRegister": "Herrega daldalaa kee uumameera. Maaloo seeni."
   },
   "dashboard": {
@@ -172,6 +175,7 @@
   "stockAlerts": {
     "title": "Beeksisaa kuusaa gadi-aanaa",
     "subtitle": "Oomishaa xiyyeeffannoo barbaadan",
+    "belowReorder": "Gad-aanaa sadarkaa haaromsaa",
     "empty": "Oomishaa kuusaa gadi-aanaa hin argamne.",
     "loadingInv": "Kuusaa fe'aa jira…",
     "viewInventory": "Kuusaa ilaali"

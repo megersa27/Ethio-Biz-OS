@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const DEFAULT_LOCAL_MONGO_URI = "mongodb://127.0.0.1:27017/ethioBiz";
+const DEFAULT_LOCAL_MONGO_URI = "mongodb://127.0.0.1:27017/ethioBiz?replicaSet=rs0";
 
 function getMongoUri() {
   const mongoURI =
@@ -12,32 +12,59 @@ function getMongoUri() {
 }
 
 async function connectDB() {
-  const mongoURI = getMongoUri();
+  const configuredUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  const candidateUris = [];
 
-  mongoose.set("bufferCommands", false);
-
-  try {
-    const useRetryableWrites = mongoURI.includes("mongodb+srv://");
-
-    await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-      socketTimeoutMS: 15000,
-      retryWrites: useRetryableWrites,
-      maxPoolSize: 10,
-    });
-
-    console.log("MongoDB connected successfully");
-  } catch (error) {
-    const uriSource = process.env.MONGODB_URI || process.env.MONGO_URI ? "configured" : "local default";
-
-    console.error(
-      `MongoDB connection failed using the ${uriSource} URI. ` +
-        "Start a local MongoDB instance or set MONGODB_URI to a reachable database URL."
-    );
-
-    throw error;
+  if (configuredUri && configuredUri.trim()) {
+    candidateUris.push(configuredUri.trim());
   }
+
+  candidateUris.push(DEFAULT_LOCAL_MONGO_URI);
+
+  let lastError;
+
+  for (const mongoURI of candidateUris) {
+    try {
+      await mongoose.disconnect().catch(() => {});
+      mongoose.set("bufferCommands", false);
+
+      const useRetryableWrites =
+        mongoURI.includes("mongodb+srv://") ||
+        mongoURI.includes("replicaSet=");
+
+      await mongoose.connect(mongoURI, {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 15000,
+        retryWrites: useRetryableWrites,
+        maxPoolSize: 10,
+      });
+
+      console.log(
+        `MongoDB connected successfully using ${
+          mongoURI === DEFAULT_LOCAL_MONGO_URI ? "local fallback" : "configured URI"
+        }.`
+      );
+
+      return mongoose.connection;
+    } catch (error) {
+      lastError = error;
+
+      const uriSource = mongoURI === DEFAULT_LOCAL_MONGO_URI ? "local fallback" : "configured";
+      console.warn(
+        `MongoDB connection failed using the ${uriSource} URI: ${error.message}. ` +
+        (mongoURI === DEFAULT_LOCAL_MONGO_URI
+          ? "Start a local MongoDB instance or set a reachable MONGODB_URI."
+          : "Falling back to the local development database.")
+      );
+
+      if (mongoURI === DEFAULT_LOCAL_MONGO_URI) {
+        break;
+      }
+    }
+  }
+
+  throw new Error(`MongoDB connection failed using the configured URI and local fallback. ${lastError?.message || ""}`.trim());
 }
 
 module.exports = connectDB;

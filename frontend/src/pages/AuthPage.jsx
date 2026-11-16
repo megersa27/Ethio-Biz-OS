@@ -51,7 +51,7 @@ export default function AuthPage({ onLogin }) {
 
     setForm((current) => ({
       ...current,
-      [name]: value,
+      [name]: name === 'phone' ? value.replace(/\D/g, '').slice(0, 10) : value,
     }));
 
     setError('');
@@ -69,8 +69,14 @@ export default function AuthPage({ onLogin }) {
         return;
       }
 
-      if (form.password.length < 12) {
-        setError(t('auth.errPasswordLen'));
+      const normalizedPhone = form.phone.replace(/\D/g, '');
+      if (form.phone.trim() && normalizedPhone.length !== 10) {
+        setError('Phone number must be exactly 10 digits');
+        return;
+      }
+
+      if (form.password.length < 8) {
+        setError('Password must be at least 8 characters');
         return;
       }
     }
@@ -277,7 +283,8 @@ export default function AuthPage({ onLogin }) {
                     value={form.phone}
                     onChange={updateField}
                     placeholder={t('auth.phonePh')}
-                    maxLength={30}
+                    maxLength={10}
+                    inputMode="numeric"
                     autoComplete="tel"
                   />
                   <small>{t('auth.emailOrPhoneHint')}</small>
@@ -313,7 +320,7 @@ export default function AuthPage({ onLogin }) {
                       ? t('auth.passwordCreatePh')
                       : t('auth.passwordLoginPh')
                   }
-                  minLength={isRegister ? 12 : undefined}
+                  minLength={isRegister ? 8 : undefined}
                   autoComplete={isRegister ? 'new-password' : 'current-password'}
                   required
                 />

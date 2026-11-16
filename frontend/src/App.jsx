@@ -38,54 +38,30 @@ import {
 } from './services/api.js';
 import { useAuth } from './context/AuthContext.jsx';
 
+// Each nav item carries a stable `key` used for routing; the visible label is
+// resolved through i18n so the whole UI switches language together.
 const navItems = [
-  { id: 'Dashboard', labelKey: 'nav.dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'Sales', labelKey: 'nav.sales', label: 'Sales', icon: ShoppingCart },
-  { id: 'Products', labelKey: 'nav.products', label: 'Products', icon: Package },
-  { id: 'Inventory', labelKey: 'nav.inventory', label: 'Inventory', icon: Boxes },
-  { id: 'Customers', labelKey: 'nav.customers', label: 'Customers', icon: Users },
-  { id: 'Expenses', labelKey: 'nav.expenses', label: 'Expenses', icon: CreditCard },
-  { id: 'Reports', labelKey: 'nav.reports', label: 'Reports', icon: ClipboardList },
+  { key: 'dashboard', icon: LayoutDashboard },
+  { key: 'sales', icon: ShoppingCart },
+  { key: 'products', icon: Package },
+  { key: 'inventory', icon: Boxes },
+  { key: 'customers', icon: Users },
+  { key: 'expenses', icon: CreditCard },
+  { key: 'reports', icon: ClipboardList },
 ];
-
-const VALID_PAGES = ['Dashboard', 'Sales', 'Products', 'Inventory', 'Customers', 'Expenses', 'Reports', 'Settings', 'Help'];
-const ACTIVE_PAGE_STORAGE_KEY = 'ethioBiz.activePage';
-const DASHBOARD_CACHE_KEY = 'ethioBiz.dashboard.cache';
-
-function readStoredJson(key, fallback) {
-  try {
-    const value = sessionStorage.getItem(key);
-    return value ? JSON.parse(value) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeStoredJson(key, value) {
-  try {
-    sessionStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore storage errors for non-persistent environments
-  }
-}
 
 function PlaceholderPage({ page, setActivePage }) {
   const { t } = useTranslation();
-  const pageKey = page.toLowerCase();
-  const description = t(`placeholder.${pageKey}`, {
-    defaultValue: t('placeholder.default'),
-  });
-
-  const PageIcon = navItems.find((item) => item.id === page || item.label === page)?.icon || Settings;
+  const PageIcon = navItems.find((item) => item.key === page)?.icon || Settings;
 
   return (
     <section className="panel section-placeholder">
       <div>
         <div className="placeholder-icon"><PageIcon size={28} /></div>
-        <h2>{t(`nav.${pageKey}`, { defaultValue: page })}</h2>
-        <p>{description}</p>
+        <h2>{t(`nav.${page}`, { defaultValue: page })}</h2>
+        <p>{t(`placeholder.${page}`, { defaultValue: t('placeholder.default') })}</p>
         <p className="placeholder-note">{t('placeholder.note')}</p>
-        <button className="primary-button" onClick={() => setActivePage('Dashboard')}>
+        <button className="primary-button" onClick={() => setActivePage('dashboard')}>
           <LayoutDashboard size={16} /> {t('common.backToDashboard')}
         </button>
       </div>
@@ -120,37 +96,27 @@ function getDashboardPeriodFilters(period, now = new Date()) {
 
 export default function App() {
   const { t } = useTranslation();
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
-
-    const storedTheme = window.localStorage.getItem('ethioBizTheme');
-    return storedTheme === 'dark' ? 'dark' : 'light';
-  });
-  const [activePage, setActivePage] = useState(() => {
-    if (typeof window === 'undefined') return 'Dashboard';
-
-    const savedPage = window.localStorage.getItem(ACTIVE_PAGE_STORAGE_KEY);
-    return VALID_PAGES.includes(savedPage) ? savedPage : 'Dashboard';
-  });
+  const [activePage, setActivePage] = useState('dashboard');
   const [period, setPeriod] = useState('This week');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sales, setSales] = useState(() => readStoredJson('ethioBizRecentSales', []));
-  const [dashboardSummary, setDashboardSummary] = useState(() => readStoredJson('ethioBizDashboardSummary', null));
-  const [lowStockItems, setLowStockItems] = useState(() => readStoredJson('ethioBizLowStockItems', []));
+  const [sales, setSales] = useState([]);
+  const [dashboardSummary, setDashboardSummary] = useState(null);
+  const [lowStockItems, setLowStockItems] = useState([]);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardRefresh, setDashboardRefresh] = useState(0);
   const { auth, authChecking, login, logout, updateProfile } = useAuth();
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(ACTIVE_PAGE_STORAGE_KEY, activePage);
-    }
-  }, [activePage]);
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+    return window.localStorage.getItem('ethioBizTheme') === 'dark' ? 'dark' : 'light';
+  });
+
+  const toggleTheme = () =>
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem('ethioBizTheme', theme);
   }, [theme]);
@@ -163,20 +129,7 @@ export default function App() {
     let cancelled = false;
 
     async function loadDashboardData() {
-      const cachedSummary = readStoredJson('ethioBizDashboardSummary', null);
-      const cachedLowStock = readStoredJson('ethioBizLowStockItems', []);
-      const cachedSales = readStoredJson('ethioBizRecentSales', []);
-      const hasCachedData = !!cachedSummary || cachedLowStock.length > 0 || cachedSales.length > 0;
-
-      if (hasCachedData) {
-        setDashboardSummary(cachedSummary);
-        setLowStockItems(cachedLowStock);
-        setSales(cachedSales);
-        setDashboardLoading(false);
-      } else {
-        setDashboardLoading(true);
-      }
-
+      setDashboardLoading(true);
       setDashboardError('');
 
       try {
@@ -195,61 +148,59 @@ export default function App() {
         const customerNames = new Map(
           customerRows.map((customer) => [
             String(customer._id || customer.id),
-            customer.name || 'Customer',
+            customer.name || t('sales.customerGeneric'),
           ])
         );
 
-        const nextLowStockItems = (summary.lowStockItems || []).map((item) => ({
-          id: String(item._id || item.id || item.name),
-          name: item.name,
-          category: 'Below reorder level',
-          quantity: item.stockQuantity,
-          unit: item.unit || 'units',
-          critical:
-            Number(item.stockQuantity) <=
-            Number(item.minimumStockLevel ?? 0),
-        }));
-
-        const nextSales = (salesResult.sales || []).map((sale) => {
-          const paymentStatus = String(sale.paymentStatus || '').toUpperCase();
-
-          let status = 'Pending';
-          if (sale.saleStatus === 'CANCELLED') {
-            status = 'Cancelled';
-          } else if (paymentStatus === 'PAID') {
-            status = 'Paid';
-          } else if (Number(sale.paidAmountMinor || 0) > 0) {
-            status = 'Partial';
-          }
-
-          const rawCustomerId = sale.customerId?._id || sale.customerId;
-
-          return {
-            id: `SAL-${String(sale._id || sale.id).slice(-6).toUpperCase()}`,
-            customer: rawCustomerId
-              ? customerNames.get(String(rawCustomerId)) || 'Customer'
-              : 'Walk-in customer',
-            date: sale.createdAt
-              ? new Date(sale.createdAt).toLocaleString('en-ET', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })
-              : 'Date unavailable',
-            amountMinor: Number(sale.totalAmountMinor) || 0,
-            status,
-          };
-        });
-
-        writeStoredJson('ethioBizDashboardSummary', summary);
-        writeStoredJson('ethioBizLowStockItems', nextLowStockItems);
-        writeStoredJson('ethioBizRecentSales', nextSales);
-
         setDashboardSummary(summary);
-        setLowStockItems(nextLowStockItems);
-        setSales(nextSales);
+
+        setLowStockItems(
+          (summary.lowStockItems || []).map((item) => ({
+            id: String(item._id || item.id || item.name),
+            name: item.name,
+            category: t('stockAlerts.belowReorder'),
+            quantity: item.stockQuantity,
+            unit: item.unit || 'units',
+            critical:
+              Number(item.stockQuantity) <=
+              Number(item.minimumStockLevel ?? 0),
+          }))
+        );
+
+        setSales(
+          (salesResult.sales || []).map((sale) => {
+            const paymentStatus = String(sale.paymentStatus || '').toUpperCase();
+
+            let status = 'Pending';
+            if (sale.saleStatus === 'CANCELLED') {
+              status = 'Cancelled';
+            } else if (paymentStatus === 'PAID') {
+              status = 'Paid';
+            } else if (Number(sale.paidAmountMinor || 0) > 0) {
+              status = 'Partial';
+            }
+
+            const rawCustomerId = sale.customerId?._id || sale.customerId;
+
+            return {
+              id: `SAL-${String(sale._id || sale.id).slice(-6).toUpperCase()}`,
+              customer: rawCustomerId
+                ? customerNames.get(String(rawCustomerId)) || t('sales.customerGeneric')
+                : t('sales.walkInCustomer'),
+              date: sale.createdAt
+                ? new Date(sale.createdAt).toLocaleString('en-ET', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })
+                : t('common.dateUnavailable'),
+              amountMinor: Number(sale.totalAmountMinor) || 0,
+              status,
+            };
+          })
+        );
       } catch (error) {
         if (!cancelled) {
-          setDashboardError(error.message || 'Could not load dashboard data.');
+          setDashboardError(error.message || t('dashboard.dataErrorLabel'));
         }
       } finally {
         if (!cancelled) setDashboardLoading(false);
@@ -261,12 +212,12 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [auth?.accessToken, dashboardRefresh, period]);
+  }, [auth?.accessToken, dashboardRefresh, period, t]);
 
   if (authChecking) {
     return (
       <main className="auth-session-checking">
-        {t('common.loading')}
+        {t('auth.checkingSession')}
       </main>
     );
   }
@@ -275,24 +226,19 @@ export default function App() {
     return <AuthPage onLogin={login} />;
   }
 
-  const salesStatLabel =
-    period === 'Today'
-      ? t('dashboard.salesToday')
-      : period === 'This year'
+  const salesLabel = period === 'Today'
+    ? t('dashboard.salesToday')
+    : period === 'This year'
       ? t('dashboard.salesYear')
       : t('dashboard.salesWeek');
-
-  const expensesStatLabel =
-    period === 'Today'
-      ? t('dashboard.expensesToday')
-      : period === 'This year'
+  const expensesLabel = period === 'Today'
+    ? t('dashboard.expensesToday')
+    : period === 'This year'
       ? t('dashboard.expensesYear')
       : t('dashboard.expensesWeek');
-
-  const profitStatLabel =
-    period === 'Today'
-      ? t('dashboard.profitToday')
-      : period === 'This year'
+  const profitLabel = period === 'Today'
+    ? t('dashboard.profitToday')
+    : period === 'This year'
       ? t('dashboard.profitYear')
       : t('dashboard.profitWeek');
 
@@ -314,13 +260,13 @@ export default function App() {
         <Topbar
           activePage={activePage}
           theme={theme}
-          onToggleTheme={() => setTheme((value) => value === 'dark' ? 'light' : 'dark')}
+          onToggleTheme={toggleTheme}
           onOpenMenu={() => setIsSidebarOpen(true)}
           onNavigate={setActivePage}
           userName={auth.user?.name}
           userPhoto={auth.user?.photo}
           businessName={auth.business?.name}
-          onSettings={() => setActivePage('Settings')}
+          onSettings={() => setActivePage('settings')}
           onLogout={logout}
           recentSales={sales}
           lowStockItems={lowStockItems}
@@ -329,12 +275,12 @@ export default function App() {
         />
 
         <div className="content">
-          {activePage === 'Dashboard' ? (
+          {activePage === 'dashboard' ? (
             <>
               <div className="page-heading">
                 <div>
                   <p className="eyebrow">{t('dashboard.eyebrow')}</p>
-                  <h1 className="dashboard-welcome">{t('dashboard.welcome', { name: auth.user?.name || t('dashboard.welcomeThere') })}</h1>
+                  <h1>{t('dashboard.welcome', { name: auth.user?.name || t('dashboard.welcomeThere') })}</h1>
                   <p>{t('dashboard.today')}</p>
                 </div>
                 <div className="heading-actions">
@@ -344,7 +290,6 @@ export default function App() {
                   <button
                     className="primary-button"
                     onClick={() => setDashboardRefresh((value) => value + 1)}
-                    disabled={dashboardLoading}
                   >
                     <RefreshCw size={16} />
                     {dashboardLoading ? t('common.refreshing') : t('dashboard.refreshData')}
@@ -352,9 +297,28 @@ export default function App() {
                 </div>
               </div>
 
+              <div className="demo-notice">
+                {dashboardError
+                  ? <AlertTriangle size={16} />
+                  : <Activity size={16} />}
+                <span>
+                  <strong>
+                    {dashboardError
+                      ? t('dashboard.dataErrorLabel')
+                      : dashboardLoading
+                        ? t('dashboard.dataLoadingLabel')
+                        : t('dashboard.dataLabel')}
+                  </strong>{' '}
+                  {dashboardError ||
+                    (dashboardLoading
+                      ? t('dashboard.dataLoading')
+                      : t('dashboard.dataReady'))}
+                </span>
+              </div>
+
               <div className="stats-grid">
                 <StatCard
-                  label={salesStatLabel}
+                  label={salesLabel}
                   value={dashboardLoading && !dashboardSummary
                     ? t('common.loading')
                     : formatMinor(dashboardSummary?.totalSalesMinor ?? 0)}
@@ -363,7 +327,7 @@ export default function App() {
                   icon={Wallet}
                 />
                 <StatCard
-                  label={expensesStatLabel}
+                  label={expensesLabel}
                   value={dashboardLoading && !dashboardSummary
                     ? t('common.loading')
                     : formatMinor(dashboardSummary?.totalExpensesMinor ?? 0)}
@@ -373,7 +337,7 @@ export default function App() {
                   color="orange"
                 />
                 <StatCard
-                  label={profitStatLabel}
+                  label={profitLabel}
                   value={dashboardLoading && !dashboardSummary
                     ? t('common.loading')
                     : formatMinor(dashboardSummary?.netProfitMinor ?? 0)}
@@ -394,7 +358,7 @@ export default function App() {
                 />
               </div>
 
-                            <div className="dashboard-grid">
+              <div className="dashboard-grid">
                 <SalesChart
                   token={auth.accessToken}
                   period={period}
@@ -417,51 +381,39 @@ export default function App() {
                 {t('dashboard.footer')}
               </div>
             </>
-          ) : activePage === 'Sales' ? (
-            <SalesPage token={auth.accessToken} setActivePage={setActivePage} />
-          ) : activePage === 'Settings' ? (
+          ) : activePage === 'sales' ? (
+            <SalesPage token={auth.accessToken} />
+          ) : activePage === 'settings' ? (
             <SettingsPage token={auth.accessToken} onProfileUpdated={updateProfile} />
-          ) : activePage === 'Reports' ? (
+          ) : activePage === 'reports' ? (
             <ReportsPage token={auth.accessToken} />
-          ) : activePage === 'Expenses' ? (
+          ) : activePage === 'expenses' ? (
             <ExpensesPage token={auth.accessToken} />
-          ) : activePage === 'Customers' ? (
+          ) : activePage === 'customers' ? (
             <CustomersPage token={auth.accessToken} />
-          ) : activePage === 'Products' ? (
+          ) : activePage === 'products' ? (
             <>
               <div className="page-heading">
                 <div>
                   <p className="eyebrow">{t('products.eyebrow')}</p>
-                  <h1>{t('products.title')}</h1>
+                  <h1>{t('nav.products')}</h1>
                   <p>{t('products.lead')}</p>
                 </div>
-                <button className="secondary-button" onClick={() => setActivePage('Dashboard')}>
+                <button className="secondary-button dashboard-link-button" onClick={() => setActivePage('dashboard')}>
                   <LayoutDashboard size={15} /> {t('common.dashboard')}
                 </button>
               </div>
               <ProductsPage token={auth.accessToken} />
             </>
-          ) : activePage === 'Inventory' ? (
+          ) : activePage === 'inventory' ? (
             <InventoryPage token={auth.accessToken} />
-          ) : activePage === 'Help' ? (
+          ) : activePage === 'help' ? (
             <HelpPage
-              onGoToDashboard={() => setActivePage('Dashboard')}
-              onOpenSettings={() => setActivePage('Settings')}
+              onGoToDashboard={() => setActivePage('dashboard')}
+              onOpenSettings={() => setActivePage('settings')}
             />
           ) : (
-            <>
-              <div className="page-heading">
-                <div>
-                  <p className="eyebrow">{t('nav.workspace')}</p>
-                  <h1>{t(`nav.${activePage.toLowerCase()}`, { defaultValue: activePage })}</h1>
-                  <p>{t('placeholder.default')}</p>
-                </div>
-                <button className="secondary-button" onClick={() => setActivePage('Dashboard')}>
-                  <LayoutDashboard size={15} /> {t('common.dashboard')}
-                </button>
-              </div>
-              <PlaceholderPage page={activePage} setActivePage={setActivePage} />
-            </>
+            <PlaceholderPage page={activePage} setActivePage={setActivePage} />
           )}
         </div>
       </main>

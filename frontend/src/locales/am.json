@@ -16,10 +16,12 @@
     "dashboard": "ዳሽቦርድ",
     "pageOf": "ገጽ {{page}} ከ {{total}}",
     "showingOf": "{{total}} {{item}} ከ {{shown}} በማሳየት ላይ",
-    "records": "መዝገቦች"
+    "records": "መዝገቦች",
+    "dateUnavailable": "ቀን አልተገኘም"
   },
   "nav": {
     "workspace": "የስራ ቦታ",
+    "brandCaption": "የንግድ አስተዳደር ቀላል ተደርጓል",
     "preferences": "ምርጫዎች",
     "dashboard": "ዳሽቦርድ",
     "sales": "ሽያጭ",
@@ -122,6 +124,7 @@
     "errEmailOrPhone": "እባክዎ የኢሜል አድራሻ ወይም የስልክ ቁጥር ያስገቡ።",
     "errPasswordLen": "የይለፍ ቃልዎ ቢያንስ 12 ቁምፎች መኖር አለበት።",
     "errGeneric": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
+    "checkingSession": "ክፍለ-ጊዜዎን በማረጋገጥ ላይ...",
     "successRegister": "የንግድ መለያዎ ተፈጥሯል። እባክዎ ይግቡ።"
   },
   "dashboard": {
@@ -172,6 +175,7 @@
   "stockAlerts": {
     "title": "ዝቅተኛ ክምችት ማሳወቂያዎች",
     "subtitle": "ትኩረት የሚገባቸው ምርቶች",
+    "belowReorder": "ከመጨረሻ ደረጃ በታች",
     "empty": "ዝቅተኛ ክምችት ያላቸው ምርቶች አልተገኙም።",
     "loadingInv": "ክምችት በመጫን ላይ…",
     "viewInventory": "ክምችት ይመልከቱ"
