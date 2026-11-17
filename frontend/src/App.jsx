@@ -96,8 +96,14 @@ function getDashboardPeriodFilters(period, now = new Date()) {
 
 export default function App() {
   const { t } = useTranslation();
-  const [activePage, setActivePage] = useState('dashboard');
-  const [period, setPeriod] = useState('This week');
+  const [activePage, setActivePage] = useState(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    return sessionStorage.getItem('ethioBizActivePage') || 'dashboard';
+  });
+  const [period, setPeriod] = useState(() => {
+    if (typeof window === 'undefined') return 'This week';
+    return sessionStorage.getItem('ethioBizDashboardPeriod') || 'This week';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sales, setSales] = useState([]);
   const [dashboardSummary, setDashboardSummary] = useState(null);
@@ -122,9 +128,21 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('ethioBizActivePage', activePage);
+    }
+  }, [activePage]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('ethioBizDashboardPeriod', period);
+    }
+  }, [period]);
+
+  useEffect(() => {
     const token = auth?.accessToken;
 
-    if (!token) return undefined;
+    if (!token || activePage !== 'dashboard') return undefined;
 
     let cancelled = false;
 
@@ -142,7 +160,7 @@ export default function App() {
 
         if (cancelled) return;
 
-        const summary = summaryResult.report || summaryResult;
+        const summary = summaryResult.report || summaryResult || {};
         const customerRows = customersResult.customers || [];
 
         const customerNames = new Map(
@@ -152,7 +170,25 @@ export default function App() {
           ])
         );
 
-        setDashboardSummary(summary);
+        const fallbackSales = salesResult.sales || [];
+        const fallbackTotalSalesMinor = fallbackSales.reduce(
+          (sum, sale) => sum + Number(sale.totalAmountMinor || 0),
+          0
+        );
+
+        const normalizedSummary = {
+          ...summary,
+          totalSalesMinor:
+            Number(summary.totalSalesMinor ?? 0) > 0
+              ? Number(summary.totalSalesMinor)
+              : fallbackTotalSalesMinor,
+          totalExpensesMinor: Number(summary.totalExpensesMinor ?? 0),
+          netProfitMinor: Number(summary.netProfitMinor ?? 0),
+          outstandingCreditMinor: Number(summary.outstandingCreditMinor ?? 0),
+          outstandingSaleCount: Number(summary.outstandingSaleCount ?? 0),
+        };
+
+        setDashboardSummary(normalizedSummary);
 
         setLowStockItems(
           (summary.lowStockItems || []).map((item) => ({
@@ -212,7 +248,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [auth?.accessToken, dashboardRefresh, period, t]);
+  }, [auth?.accessToken, activePage, dashboardRefresh, period, t]);
 
   if (authChecking) {
     return (
