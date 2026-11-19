@@ -372,18 +372,6 @@ export default function SalesPage({ token, setActivePage }) {
     0
   );
 
-  const creditAmountMinor = useMemo(() => {
-    if (paymentMode === 'full') return 0;
-    if (paymentMode === 'credit') return totalAmountMinor;
-
-    const paid = Number(paidAmount);
-    if (!Number.isFinite(paid) || paid < 0) {
-      return totalAmountMinor;
-    }
-
-    return Math.max(0, totalAmountMinor - moneyToMinor(paid));
-  }, [paidAmount, paymentMode, totalAmountMinor]);
-
   function updateItem(index, field, value) {
     setItems((current) =>
       current.map((item, itemIndex) =>
@@ -1085,20 +1073,21 @@ export default function SalesPage({ token, setActivePage }) {
                         <input
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="1"
                           value={paidAmount}
-                          onChange={(event) => setPaidAmount(event.target.value)}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            if (value === '') {
+                              setPaidAmount('');
+                              return;
+                            }
+                            const rounded = Math.round(Number(value));
+                            setPaidAmount(Number.isFinite(rounded) ? String(rounded) : '');
+                          }}
                           required
                           disabled={saving}
                         />
                       </label>
-                    )}
-
-                    {paymentMode !== 'full' && (
-                      <div className="sales-credit-amount-summary">
-                        <span>{t('sales.amountDue')}</span>
-                        <strong>{formatMinor(creditAmountMinor)}</strong>
-                      </div>
                     )}
 
                     {paymentMode !== 'full' && (

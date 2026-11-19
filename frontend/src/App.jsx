@@ -308,6 +308,8 @@ export default function App() {
           lowStockItems={lowStockItems}
           outstandingCreditMinor={dashboardSummary?.outstandingCreditMinor ?? 0}
           outstandingSaleCount={dashboardSummary?.outstandingSaleCount ?? 0}
+          businessDataNote={dashboardError || (dashboardLoading ? t('dashboard.dataLoading') : t('dashboard.dataReady'))}
+          businessDataLabel={dashboardError ? t('dashboard.dataErrorLabel') : dashboardLoading ? t('dashboard.dataLoadingLabel') : t('dashboard.dataLabel')}
         />
 
         <div className="content">
@@ -331,25 +333,6 @@ export default function App() {
                     {dashboardLoading ? t('common.refreshing') : t('dashboard.refreshData')}
                   </button>
                 </div>
-              </div>
-
-              <div className="demo-notice">
-                {dashboardError
-                  ? <AlertTriangle size={16} />
-                  : <Activity size={16} />}
-                <span>
-                  <strong>
-                    {dashboardError
-                      ? t('dashboard.dataErrorLabel')
-                      : dashboardLoading
-                        ? t('dashboard.dataLoadingLabel')
-                        : t('dashboard.dataLabel')}
-                  </strong>{' '}
-                  {dashboardError ||
-                    (dashboardLoading
-                      ? t('dashboard.dataLoading')
-                      : t('dashboard.dataReady'))}
-                </span>
               </div>
 
               <div className="stats-grid">

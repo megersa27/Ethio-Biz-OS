@@ -9,9 +9,22 @@ import { getCurrentUser } from '../services/api.js';
 
 const AuthContext = createContext(null);
 
-function readStoredJson(key, fallback) {
+function getAuthStorage() {
+  if (typeof window === 'undefined') return null;
   try {
-    const value = sessionStorage.getItem(key);
+    return window.localStorage || window.sessionStorage;
+  } catch {
+    return window.sessionStorage;
+  }
+}
+
+function readStoredJson(key, fallback) {
+  const storage = getAuthStorage();
+
+  if (!storage) return fallback;
+
+  try {
+    const value = storage.getItem(key) || sessionStorage.getItem(key);
     return value ? JSON.parse(value) : fallback;
   } catch {
     return fallback;
@@ -19,9 +32,12 @@ function readStoredJson(key, fallback) {
 }
 
 function clearStoredSession() {
-  sessionStorage.removeItem('ethioBizAccessToken');
-  sessionStorage.removeItem('ethioBizUser');
-  sessionStorage.removeItem('ethioBizBusiness');
+  if (typeof window === 'undefined') return;
+
+  ['ethioBizAccessToken', 'ethioBizUser', 'ethioBizBusiness'].forEach((key) => {
+    window.localStorage.removeItem(key);
+    window.sessionStorage.removeItem(key);
+  });
 }
 
 export function AuthProvider({ children }) {
@@ -30,7 +46,9 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    const token = sessionStorage.getItem('ethioBizAccessToken');
+    const storage = getAuthStorage();
+    const token = (storage ? storage.getItem('ethioBizAccessToken') : null)
+      || sessionStorage.getItem('ethioBizAccessToken');
 
     if (!token) {
       setAuthChecking(false);
@@ -82,6 +100,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   function login(result) {
+    const storage = getAuthStorage();
+
+    if (storage) {
+      storage.setItem('ethioBizAccessToken', result.accessToken);
+      storage.setItem('ethioBizUser', JSON.stringify(result.user));
+      storage.setItem('ethioBizBusiness', JSON.stringify(result.business));
+    }
+
     sessionStorage.setItem('ethioBizAccessToken', result.accessToken);
     sessionStorage.setItem('ethioBizUser', JSON.stringify(result.user));
     sessionStorage.setItem('ethioBizBusiness', JSON.stringify(result.business));
@@ -92,6 +118,7 @@ export function AuthProvider({ children }) {
   function updateProfile(profile) {
     if (!profile) return;
 
+    const storage = getAuthStorage();
     const user = {
       ...readStoredJson('ethioBizUser', {}),
       ...(profile.user || {}),
@@ -100,6 +127,11 @@ export function AuthProvider({ children }) {
       ...readStoredJson('ethioBizBusiness', {}),
       ...(profile.business || {}),
     };
+
+    if (storage) {
+      storage.setItem('ethioBizUser', JSON.stringify(user));
+      storage.setItem('ethioBizBusiness', JSON.stringify(business));
+    }
 
     sessionStorage.setItem('ethioBizUser', JSON.stringify(user));
     sessionStorage.setItem('ethioBizBusiness', JSON.stringify(business));

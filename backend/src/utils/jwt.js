@@ -29,7 +29,7 @@ function generateToken(user) {
     getJwtSecret(),
     {
       subject: String(user._id),
-      expiresIn: "1h",
+      expiresIn: "1d",
       issuer: "ethiobiz-os",
       audience: "ethiobiz-os-api",
     }

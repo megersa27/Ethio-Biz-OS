@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Activity,
   ArrowRight,
   Eye,
   EyeOff,
@@ -11,6 +10,7 @@ import {
 
 import { loginUser, registerBusiness } from '../services/api.js';
 import LanguageSwitcher from '../components/layout/LanguageSwitcher.jsx';
+import logo from '../assets/logo.png';
 import './AuthPage.css';
 
 const initialForm = {
@@ -131,11 +131,11 @@ export default function AuthPage({ onLogin }) {
       <section className="auth-story">
         <div className="auth-brand">
           <span className="auth-brand-mark">
-            <Activity size={25} />
+            <img src={logo} alt="EthioBiz OS" />
           </span>
 
           <span className="auth-brand-name">
-            EthioBiz <strong>MS</strong>
+            EthioBiz <strong>OS</strong>
           </span>
         </div>
 
@@ -176,7 +176,7 @@ export default function AuthPage({ onLogin }) {
 
         <div className="auth-form-card">
           <div className="auth-mobile-brand">
-            <Activity size={23} />
+            <img src={logo} alt="EthioBiz OS" />
             <span>EthioBiz <strong>OS</strong></span>
           </div>
 

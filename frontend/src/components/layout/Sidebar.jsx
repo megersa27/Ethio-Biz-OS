@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { Activity, ArrowRight, CircleHelp, Settings } from 'lucide-react';
+import { ArrowRight, CircleHelp, Settings } from 'lucide-react';
+import logo from '../../assets/logo.png';
 
 function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar, lowStockCount = 0 }) {
   const { t } = useTranslation();
@@ -15,7 +16,9 @@ function Sidebar({ navItems, activePage, setActivePage, isOpen, closeSidebar, lo
       )}
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="brand">
-          <div className="brand-mark"><Activity size={23} /></div>
+          <div className="brand-mark">
+            <img src={logo} alt="EthioBiz OS" />
+          </div>
           <div>
             <p className="brand-name">
               EthioBiz<span style={{ color: '#176b4d' }}> OS</span>

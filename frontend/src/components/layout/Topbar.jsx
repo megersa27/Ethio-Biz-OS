@@ -28,6 +28,8 @@ export default function Topbar({
   lowStockItems = [],
   outstandingCreditMinor = 0,
   outstandingSaleCount = 0,
+  businessDataLabel = 'Business data:',
+  businessDataNote = 'Your business summary is refreshed for the selected period, with current credit and stock alerts included.',
 }) {
   const { t } = useTranslation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -135,6 +137,20 @@ export default function Topbar({
           {notificationsOpen && (
             <div className="topbar-popover notification-popover">
               <div className="popover-heading">{t('topbar.notifHeading')}</div>
+
+              <button
+                type="button"
+                className="notification-item"
+                onClick={() => openPage('dashboard')}
+              >
+                <span className="notification-symbol warning">
+                  <Bell size={17} />
+                </span>
+                <span className="notification-copy">
+                  <strong>{businessDataLabel}</strong>
+                  <small>{businessDataNote}</small>
+                </span>
+              </button>
 
               <button
                 type="button"

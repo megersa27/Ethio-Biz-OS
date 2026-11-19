@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const DEFAULT_LOCAL_MONGO_URI = "mongodb://127.0.0.1:27017/ethioBiz?replicaSet=rs0";
+const DEFAULT_LOCAL_MONGO_URI = "mongodb://127.0.0.1:27017/ethioBiz";
 
 function getMongoUri() {
   const mongoURI =

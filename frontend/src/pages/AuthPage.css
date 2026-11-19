@@ -28,11 +28,19 @@
 .auth-brand-mark {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.12);
+  width: 64px;
+  height: 64px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.auth-brand-mark img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  padding: 0;
 }
 
 .auth-brand-name {
@@ -173,6 +181,12 @@
 
 .auth-mobile-brand {
   display: none;
+}
+
+.auth-mobile-brand img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .auth-heading {

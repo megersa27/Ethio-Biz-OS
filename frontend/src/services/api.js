@@ -57,9 +57,10 @@ export async function apiRequest(path, options = {}, timeoutMs = DEFAULT_TIMEOUT
 
     if (response.status === 401 || /(invalid|expired).*token|authentication token/i.test(message)) {
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('ethioBizAccessToken');
-        sessionStorage.removeItem('ethioBizUser');
-        sessionStorage.removeItem('ethioBizBusiness');
+        ['ethioBizAccessToken', 'ethioBizUser', 'ethioBizBusiness'].forEach((key) => {
+          window.localStorage.removeItem(key);
+          window.sessionStorage.removeItem(key);
+        });
       }
     }
 
