@@ -1,7 +1,7 @@
 
 require("dotenv").config();
 
-const mongoose = require("mongoose");
+const connectDB = require("../config/database");
 
 const {
   analyzeSales,
@@ -10,27 +10,34 @@ const {
 
 async function testSalesTool() {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    // Reuse EthioBiz OS's existing database connection.
+    await connectDB();
 
-    console.log("MongoDB connected successfully.");
+    console.log("\nMongoDB connected successfully.");
 
-    // Temporary development test only.
-    // Use the businessId of a real business in your database.
-    const tenantId = "REPLACE_WITH_REAL_BUSINESS_ID";
+    // Replace with a real business ID from MongoDB.
+    const tenantId = "6afee4146738cbdc60a28afa";
+
+    console.log("\nGetting sales analysis...");
 
     const sales = await analyzeSales(tenantId);
-    const profit = await analyzeProfit(tenantId);
 
     console.log("\nSALES ANALYSIS:");
     console.log(JSON.stringify(sales, null, 2));
+
+    console.log("\nGetting profit analysis...");
+
+    const profit = await analyzeProfit(tenantId);
 
     console.log("\nPROFIT ANALYSIS:");
     console.log(JSON.stringify(profit, null, 2));
 
   } catch (error) {
-    console.error("Test failed:", error.message);
+    console.error("\nTest failed:", error.message);
   } finally {
+    const mongoose = require("mongoose");
     await mongoose.disconnect();
+    console.log("\nDatabase connection closed.");
   }
 }
 
