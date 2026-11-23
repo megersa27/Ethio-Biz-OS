@@ -29,77 +29,108 @@ function containsAny(message, keywords) {
 /**
  * Identify what the business owner wants.
  */
+
+/**
+ * Detect what the user wants to know about their business.
+ * This is rule-based intent detection, not an LLM.
+ */
 function detectIntent(message) {
   const text = message.toLowerCase().trim();
 
-  // 1. Complete business overview
-  if (
-    containsAny(text, [
-      "business overview",
-      "business summary",
-      "overall business",
-      "summarize my business",
-      "how is my business",
-      "business performance",
-    ])
-  ) {
+  // 1. Business overview
+  const overviewPatterns = [
+    /business overview/,
+    /overall business/,
+    /how is my business/,
+    /how is my shop/,
+    /how is the business doing/,
+    /how are we doing/,
+    /business performance/,
+    /business summary/,
+    /summarize my business/,
+    /how is everything/,
+  ];
+
+  if (overviewPatterns.some((pattern) => pattern.test(text))) {
     return "business_overview";
   }
 
-  // 2. Inventory analysis
-  if (
-    containsAny(text, [
-      "inventory",
-      "stock",
-      "products",
-      "low stock",
-      "restock",
-      "reorder",
-    ])
-  ) {
-    return "inventory";
-  }
+  // 2. Profit and loss
+  const profitPatterns = [
+    /profit/,
+    /loss/,
+    /making money/,
+    /am i earning/,
+    /how much did i earn/,
+    /how much money did i make/,
+    /net income/,
+    /gross income/,
+    /financial performance/,
+    /business losing money/,
+    /am i profitable/,
+  ];
 
-  // 3. Expense analysis
-  if (
-    containsAny(text, [
-      "expense",
-      "expenses",
-      "spending",
-      "spent",
-    ])
-  ) {
-    return "expenses";
-  }
-
-  // 4. Profit analysis
-  if (
-    containsAny(text, [
-      "profit",
-      "loss",
-      "profitable",
-      "earnings",
-      "net income",
-      "gross income",
-    ])
-  ) {
+  if (profitPatterns.some((pattern) => pattern.test(text))) {
     return "profit";
   }
 
-  // 5. Sales analysis
-  if (
-    containsAny(text, [
-      "sales",
-      "revenue",
-      "sold",
-      "selling",
-    ])
-  ) {
+  // 3. Expenses
+  const expensePatterns = [
+    /expense/,
+    /expenses/,
+    /spending/,
+    /spent/,
+    /costs/,
+    /where is my money going/,
+    /how much did i spend/,
+    /money spent/,
+    /business expenditure/,
+  ];
+
+  if (expensePatterns.some((pattern) => pattern.test(text))) {
+    return "expenses";
+  }
+
+  // 4. Inventory and stock
+  const inventoryPatterns = [
+    /inventory/,
+    /stock/,
+    /products/,
+    /low stock/,
+    /out of stock/,
+    /running out/,
+    /need restocking/,
+    /restock/,
+    /available items/,
+    /how many items/,
+  ];
+
+  if (inventoryPatterns.some((pattern) => pattern.test(text))) {
+    return "inventory";
+  }
+
+  // 5. Sales
+  const salesPatterns = [
+    /sales/,
+    /sold/,
+    /selling/,
+    /revenue/,
+    /turnover/,
+    /how much did i sell/,
+    /money from selling/,
+    /daily sales/,
+    /weekly sales/,
+    /monthly sales/,
+  ];
+
+  if (salesPatterns.some((pattern) => pattern.test(text))) {
     return "sales";
   }
 
+  // No recognized business intent
   return "unknown";
 }
+
 
 
 /**
