@@ -15,6 +15,7 @@ function validateTenantId(tenantId) {
   }
 }
 
+
 function parseDateOnly(value, fieldName) {
   if (
     typeof value !== "string" ||
@@ -23,16 +24,22 @@ function parseDateOnly(value, fieldName) {
     throw createError(`${fieldName} must use YYYY-MM-DD format`, 400);
   }
 
-  const date = new Date(`${value}T00:00:00.000Z`);
+  const calendarDate = new Date(`${value}T00:00:00.000Z`);
 
   if (
-    Number.isNaN(date.getTime()) ||
-    date.toISOString().slice(0, 10) !== value
+    Number.isNaN(calendarDate.getTime()) ||
+    calendarDate.toISOString().slice(0, 10) !== value
   ) {
     throw createError(`${fieldName} is not a valid calendar date`, 400);
   }
 
-  return date;
+  // Ethiopia is UTC+3.
+  // Ethiopian midnight is 21:00 UTC on the previous day.
+  const utcDate = new Date(calendarDate);
+  utcDate.setUTCHours(0, 0, 0, 0);
+  utcDate.setUTCHours(utcDate.getUTCHours() - 3);
+
+  return utcDate;
 }
 
 async function getSalesReport(tenantId, filters = {}) {
@@ -194,7 +201,7 @@ async function getSalesReport(tenantId, filters = {}) {
     period: {
       startDate: filters.startDate ?? null,
       endDate: filters.endDate ?? null,
-      timezone: "UTC",
+      timezone: "Africa/Addis_Ababa",
     },
     salesCount: sales.salesCount,
     totalSalesMinor: sales.totalSalesMinor,
@@ -374,7 +381,7 @@ async function getDashboardSummary(tenantId, filters = {}) {
     period: {
       startDate: filters.startDate ?? null,
       endDate: filters.endDate ?? null,
-      timezone: "UTC",
+      timezone: "Africa/Addis_Ababa",
     },
     totalSalesMinor: salesReport.totalSalesMinor,
     costOfGoodsSoldMinor: salesReport.costOfGoodsSoldMinor,
@@ -442,7 +449,7 @@ async function getExpensesReport(tenantId, filters = {}) {
     period: {
       startDate: filters.startDate ?? null,
       endDate: filters.endDate ?? null,
-      timezone: "UTC",
+      timezone: "Africa/Addis_Ababa",
     },
     totalExpensesMinor: total.totalExpensesMinor,
     expenseCount: total.expenseCount,
@@ -480,7 +487,7 @@ async function getProfitReport(tenantId, filters = {}) {
     period: {
       startDate: filters.startDate ?? null,
       endDate: filters.endDate ?? null,
-      timezone: "UTC",
+      timezone: "Africa/Addis_Ababa",
     },
     totalSalesMinor: salesReport.totalSalesMinor,
     costOfGoodsSoldMinor: salesReport.costOfGoodsSoldMinor,

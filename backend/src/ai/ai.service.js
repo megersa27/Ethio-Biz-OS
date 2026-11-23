@@ -16,28 +16,17 @@ const {
   analyzeBusinessOverview,
 } = require("./tools/business.tools");
 
+const { detectPeriod } = require("./period.utils");
+
 // Convert an amount into readable ETB.
 function formatETB(amount) {
   return `${Number(amount || 0).toLocaleString("en-US")} ETB`;
 }
 
-// Check whether a message contains any keyword.
-function containsAny(message, keywords) {
-  return keywords.some((keyword) => message.includes(keyword));
-}
-
-/**
- * Identify what the business owner wants.
- */
-
-/**
- * Detect what the user wants to know about their business.
- * This is rule-based intent detection, not an LLM.
- */
+// Detect what the user wants to know about their business.
 function detectIntent(message) {
   const text = message.toLowerCase().trim();
 
-  // 1. Business overview
   const overviewPatterns = [
     /business overview/,
     /overall business/,
@@ -55,7 +44,6 @@ function detectIntent(message) {
     return "business_overview";
   }
 
-  // 2. Profit and loss
   const profitPatterns = [
     /profit/,
     /loss/,
@@ -74,7 +62,6 @@ function detectIntent(message) {
     return "profit";
   }
 
-  // 3. Expenses
   const expensePatterns = [
     /expense/,
     /expenses/,
@@ -91,7 +78,6 @@ function detectIntent(message) {
     return "expenses";
   }
 
-  // 4. Inventory and stock
   const inventoryPatterns = [
     /inventory/,
     /stock/,
@@ -109,7 +95,6 @@ function detectIntent(message) {
     return "inventory";
   }
 
-  // 5. Sales
   const salesPatterns = [
     /sales/,
     /sold/,
@@ -127,11 +112,8 @@ function detectIntent(message) {
     return "sales";
   }
 
-  // No recognized business intent
   return "unknown";
 }
-
-
 
 /**
  * Handle simple conversations that do not require business reports.
@@ -139,36 +121,26 @@ function detectIntent(message) {
 function handleConversation(message) {
   const text = message.toLowerCase().trim();
 
-  // Greetings
   if (/^(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*$/i.test(text)) {
     return "Hello! 👋 Welcome to EthioBiz AI.\n\nHow can I help you manage your business today?";
   }
 
-  // Appreciation
   if (/^(thanks|thank you|thank you so much)[!. ]*$/i.test(text)) {
     return "You're welcome! 😊 I'm happy to help you understand your business.";
   }
 
-  // Farewell
-  if (/^(bye|goodbye|see you|see you later)[!. ]*$/i.test(text)) {
+  if (/^(bye|goodbye|see you|see you later)[!.]*$/i.test(text)) {
     return "Goodbye! 👋 Keep growing your business. I'll be here whenever you need help.";
   }
 
-  // Assistant identity
-  if (
-    /^(who are you|what are you|what is your name)[?!. ]*$/i.test(text)
-  ) {
+  if (/^(who are you|what are you|what is your name)[?!. ]*$/i.test(text)) {
     return "I'm EthioBiz AI, your business assistant. I help you understand your business performance using your recorded data.";
   }
 
-  // Capabilities
-  if (
-    /^(what can you do|how can you help me|what do you do)[?!. ]*$/i.test(text)
-  ) {
+  if (/^(what can you do|how can you help me|what do you do)[?!. ]*$/i.test(text)) {
     return "I can help you with:\n\n📊 Sales reports\n💰 Profit and loss analysis\n🧾 Expense reports\n📦 Inventory and stock analysis\n📈 Overall business performance\n\nAsk me a question about any of these areas!";
   }
 
-  // Help
   if (/^(help|help me|commands|what can i ask)[?!. ]*$/i.test(text)) {
     return "Here are some questions you can ask:\n\n• Show me my sales report\n• How much profit did I make?\n• Show me my expenses\n• How is my inventory?\n• Give me my business overview\n\nYou can also say Hello or ask what I can do.";
   }
@@ -176,19 +148,18 @@ function handleConversation(message) {
   return null;
 }
 
-
 /**
  * Main EthioBiz AI agent function.
  *
- * The tenantId must come from authenticated backend
- * middleware, never from the user's message.
+ * tenantId must come from authenticated backend middleware,
+ * never from the user's message.
  */
 async function handleUserMessage(message, tenantId) {
   if (!message || typeof message !== "string" || !message.trim()) {
     throw new Error("Please enter a valid question.");
   }
 
-    // First, handle greetings and simple conversations.
+  // First, handle greetings and simple conversations.
   const conversationAnswer = handleConversation(message);
 
   if (conversationAnswer) {
@@ -200,18 +171,35 @@ async function handleUserMessage(message, tenantId) {
     };
   }
 
-  // If it is not a conversation, detect the business intent.
+  // Detect the business intent.
   const intent = detectIntent(message);
+
+  // Detect the requested reporting period.
+  const period = detectPeriod(message);
+
+  // Prepare date filters for report tools.
+  const filters = period
+    ? {
+        startDate: period.startDate,
+        endDate: period.endDate,
+      }
+    : {};
+
+  // Display the selected period in the response.
+  const periodText = period
+    ? `Period: ${period.label} (${period.startDate} to ${period.endDate})\n\n`
+    : "Period: All recorded data\n\n";
 
   let data;
   let answer;
 
   switch (intent) {
     case "business_overview": {
-      data = await analyzeBusinessOverview(tenantId);
+      data = await analyzeBusinessOverview(tenantId, filters);
 
       answer =
         `Here is your business overview:\n\n` +
+        periodText +
         `Total sales: ${formatETB(data.sales.totalSalesETB)}\n` +
         `Gross profit: ${formatETB(data.sales.grossProfitETB)}\n` +
         `Total expenses: ${formatETB(data.finance.totalExpensesETB)}\n` +
@@ -219,7 +207,8 @@ async function handleUserMessage(message, tenantId) {
         `Total products: ${data.inventory.totalProducts}\n` +
         `Low-stock products: ${data.inventory.lowStockProducts}\n` +
         `Inventory value: ${formatETB(data.inventory.inventoryValueETB)}\n` +
-        `Outstanding credit: ${formatETB(data.customerCredit.outstandingCreditETB)}`;
+        `Outstanding credit: ${formatETB(data.customerCredit.outstandingCreditETB)}\n\n` +
+        `Note: Sales and expenses reflect the selected period. Inventory and outstanding credit show current figures.`;
 
       break;
     }
@@ -231,13 +220,14 @@ async function handleUserMessage(message, tenantId) {
         `Your inventory report:\n\n` +
         `Total products: ${data.totalProducts}\n` +
         `Low-stock products: ${data.lowStockProducts}\n` +
-        `Inventory value: ${formatETB(data.inventoryValueETB)}`;
+        `Inventory value: ${formatETB(data.inventoryValueETB)}\n\n` +
+        `Note: This report shows your current inventory.`;
 
       break;
     }
 
     case "expenses": {
-      data = await analyzeExpenses(tenantId);
+      data = await analyzeExpenses(tenantId, filters);
 
       const categories = data.expensesByCategory
         .map(
@@ -248,6 +238,7 @@ async function handleUserMessage(message, tenantId) {
 
       answer =
         `Your expense report:\n\n` +
+        periodText +
         `Total expenses: ${formatETB(data.totalExpensesETB)}\n` +
         `Number of expenses: ${data.expenseCount}\n\n` +
         `Expenses by category:\n${categories || "No expenses recorded."}`;
@@ -256,10 +247,11 @@ async function handleUserMessage(message, tenantId) {
     }
 
     case "profit": {
-      data = await analyzeFinancialPerformance(tenantId);
+      data = await analyzeFinancialPerformance(tenantId, filters);
 
       answer =
         `Your financial performance:\n\n` +
+        periodText +
         `Total sales: ${formatETB(data.totalSalesETB)}\n` +
         `Gross profit: ${formatETB(data.grossProfitETB)}\n` +
         `Total expenses: ${formatETB(data.totalExpensesETB)}\n` +
@@ -269,10 +261,11 @@ async function handleUserMessage(message, tenantId) {
     }
 
     case "sales": {
-      data = await analyzeSales(tenantId);
+      data = await analyzeSales(tenantId, filters);
 
       answer =
         `Your sales report:\n\n` +
+        periodText +
         `Total sales: ${formatETB(data.totalSalesETB)}\n` +
         `Number of sales: ${data.salesCount}\n` +
         `Gross profit: ${formatETB(data.grossProfitETB)}\n` +
