@@ -306,3 +306,11 @@ export function updateSettingsProfile(token, profile) {
     body: profile,
   });
 }
+// Send a message to the EthioBiz AI Assistant.
+export function sendAIMessage(token, message) {
+  return apiRequest('/ai/chat', {
+    method: 'POST',
+    token,
+    body: { message },
+  });
+}

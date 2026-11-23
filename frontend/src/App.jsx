@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Activity,
+  Bot,
   AlertTriangle,
   Boxes,
   ClipboardList,
@@ -27,6 +28,7 @@ import ExpensesPage from './pages/ExpensesPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import HelpPage from './pages/HelpPage.jsx';
+import AIAssistantPage from './pages/AIAssistantPage.jsx';
 import { StatCard, SalesChart, StockAlerts, RecentSales } from './components/dashboard/DashboardWidgets.jsx';
 import { formatMinor } from './utils/currency.js';
 import Sidebar from './components/layout/Sidebar.jsx';
@@ -48,6 +50,7 @@ const navItems = [
   { key: 'customers', icon: Users },
   { key: 'expenses', icon: CreditCard },
   { key: 'reports', icon: ClipboardList },
+    { key: 'aiAssistant', icon: Bot },
 ];
 
 function PlaceholderPage({ page, setActivePage }) {
@@ -407,6 +410,8 @@ export default function App() {
             <SettingsPage token={auth.accessToken} onProfileUpdated={updateProfile} />
           ) : activePage === 'reports' ? (
             <ReportsPage token={auth.accessToken} />
+            ) : activePage === 'aiAssistant' ? (
+  <AIAssistantPage token={auth.accessToken} />
           ) : activePage === 'expenses' ? (
             <ExpensesPage token={auth.accessToken} />
           ) : activePage === 'customers' ? (

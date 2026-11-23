@@ -1,4 +1,3 @@
-
 const express = require("express");
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
@@ -8,6 +7,7 @@ const reportRoutes = require("./routes/reportRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 const app = express();
 
@@ -29,6 +29,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Centralized error handler
 app.use((err, req, res, next) => {
