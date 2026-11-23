@@ -101,6 +101,51 @@ function detectIntent(message) {
   return "unknown";
 }
 
+
+/**
+ * Handle simple conversations that do not require business reports.
+ */
+function handleConversation(message) {
+  const text = message.toLowerCase().trim();
+
+  // Greetings
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*$/i.test(text)) {
+    return "Hello! 👋 Welcome to EthioBiz AI.\n\nHow can I help you manage your business today?";
+  }
+
+  // Appreciation
+  if (/^(thanks|thank you|thank you so much)[!. ]*$/i.test(text)) {
+    return "You're welcome! 😊 I'm happy to help you understand your business.";
+  }
+
+  // Farewell
+  if (/^(bye|goodbye|see you|see you later)[!. ]*$/i.test(text)) {
+    return "Goodbye! 👋 Keep growing your business. I'll be here whenever you need help.";
+  }
+
+  // Assistant identity
+  if (
+    /^(who are you|what are you|what is your name)[?!. ]*$/i.test(text)
+  ) {
+    return "I'm EthioBiz AI, your business assistant. I help you understand your business performance using your recorded data.";
+  }
+
+  // Capabilities
+  if (
+    /^(what can you do|how can you help me|what do you do)[?!. ]*$/i.test(text)
+  ) {
+    return "I can help you with:\n\n📊 Sales reports\n💰 Profit and loss analysis\n🧾 Expense reports\n📦 Inventory and stock analysis\n📈 Overall business performance\n\nAsk me a question about any of these areas!";
+  }
+
+  // Help
+  if (/^(help|help me|commands|what can i ask)[?!. ]*$/i.test(text)) {
+    return "Here are some questions you can ask:\n\n• Show me my sales report\n• How much profit did I make?\n• Show me my expenses\n• How is my inventory?\n• Give me my business overview\n\nYou can also say Hello or ask what I can do.";
+  }
+
+  return null;
+}
+
+
 /**
  * Main EthioBiz AI agent function.
  *
@@ -112,6 +157,19 @@ async function handleUserMessage(message, tenantId) {
     throw new Error("Please enter a valid question.");
   }
 
+    // First, handle greetings and simple conversations.
+  const conversationAnswer = handleConversation(message);
+
+  if (conversationAnswer) {
+    return {
+      success: true,
+      intent: "conversation",
+      answer: conversationAnswer,
+      data: null,
+    };
+  }
+
+  // If it is not a conversation, detect the business intent.
   const intent = detectIntent(message);
 
   let data;
